@@ -189,10 +189,10 @@ To prevent de-anonymizing small teams, the `PrivacyGuard` component filters aggr
 
 ```mermaid
 flowchart TD
-    Start[Aggregate Query Executed] --> CountCheck{Response Count N >= Threshold?}
-    CountCheck -- Yes (N >= 5) --> ReturnData[Return Unsuppressed Metric Object]
-    CountCheck -- No (N < 5) --> SuppressData[Return Suppressed Result]
-    SuppressData --> Payload[output: { status: 'SUPPRESSED', message: 'Sample size too small' }]
+    Start["Aggregate Query Executed"] --> CountCheck{"Response Count N >= Threshold?"}
+    CountCheck -- "Yes (N >= 5)" --> ReturnData["Return Unsuppressed Metric Object"]
+    CountCheck -- "No (N < 5)" --> SuppressData["Return Suppressed Result"]
+    SuppressData --> Payload["output: status='SUPPRESSED', message='Sample size too small'"]
 ```
 
 ---

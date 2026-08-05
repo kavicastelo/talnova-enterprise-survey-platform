@@ -153,9 +153,9 @@ Before rendering data cells into PDF heatmaps or Excel sheets, the `reporting-se
 
 ```mermaid
 flowchart TD
-    FetchData[Fetch Aggregated Scores for Org Node X] --> SizeCheck{Response Count N >= 5?}
-    SizeCheck -- Yes --> RenderScore[Render Numerical Score e.g. 78.4%]
-    SizeCheck -- No --> RenderSuppressed[Render '* N/A (N < 5)' Cell]
+    FetchData["Fetch Aggregated Scores for Org Node X"] --> SizeCheck{"Response Count N >= 5?"}
+    SizeCheck -- "Yes" --> RenderScore["Render Numerical Score (e.g., 78.4%)"]
+    SizeCheck -- "No" --> RenderSuppressed["Render '* N/A (N &lt; 5)' Cell"]
 ```
 
 ---

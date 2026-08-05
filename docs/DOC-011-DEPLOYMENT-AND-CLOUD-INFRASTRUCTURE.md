@@ -69,47 +69,56 @@ This specification strictly depends on and extends:
 
 ```mermaid
 graph TB
-    subgraph Global Edge Layer
-        CF[AWS CloudFront CDN]
-        WAF[AWS WAF Security Rules]
+
+    Internet["Public Internet Users"]
+
+    subgraph Edge["Global Edge Layer"]
+        CF["AWS CloudFront CDN"]
+        WAF["AWS WAF Security Rules"]
     end
 
-    subgraph AWS Region (us-east-1)
-        subgraph Virtual Private Cloud VPC 10.0.0.0/16
-            subgraph Public Subnets - 3 AZs
-                ALB[Application Load Balancer]
-                NAT[NAT Gateways]
+    subgraph Region["AWS Region us-east-1"]
+
+        subgraph VPC["Virtual Private Cloud (10.0.0.0/16)"]
+
+            subgraph Public["Public Subnets - 3 AZs"]
+                ALB["Application Load Balancer"]
+                NAT["NAT Gateways"]
             end
 
-            subgraph Private Application Subnets - 3 AZs
-                subgraph AWS ECS Cluster Fargate
-                    GW[api-gateway]
-                    PCS[project-config-service]
-                    OMS[organization-service]
-                    EMS[employee-service]
-                    SBS[survey-builder-service]
-                    SDS[survey-distribution-service]
-                    RIS[response-ingestion-service]
-                    AES[analytics-engine-service]
-                    RPS[reporting-service]
-                    APS[action-planning-service]
-                    AIS[ai-analytics-service]
-                    NTS[notification-service]
-                end
+            subgraph App["Private Application Subnets - 3 AZs"]
+
+                ECS["AWS ECS Cluster (Fargate)"]
+
+                GW["api-gateway"]
+                PCS["project-config-service"]
+                OMS["organization-service"]
+                EMS["employee-service"]
+                SBS["survey-builder-service"]
+                SDS["survey-distribution-service"]
+                RIS["response-ingestion-service"]
+                AES["analytics-engine-service"]
+                RPS["reporting-service"]
+                APS["action-planning-service"]
+                AIS["ai-analytics-service"]
+                NTS["notification-service"]
+
             end
 
-            subgraph Private Data Subnets - 3 AZs
-                ElastiCache[(AWS ElastiCache Redis Cluster)]
-                MSK[(AWS MSK Kafka Cluster)]
+            subgraph Data["Private Data Subnets - 3 AZs"]
+                ElastiCache["AWS ElastiCache Redis Cluster"]
+                MSK["AWS MSK Kafka Cluster"]
             end
+
         end
 
-        subgraph MongoDB Atlas Cloud
-            AtlasDB[(MongoDB Atlas Multi-AZ Sharded Cluster)]
+        subgraph Atlas["MongoDB Atlas Cloud"]
+            AtlasDB["MongoDB Atlas Multi-AZ Sharded Cluster"]
         end
+
     end
 
-    Internet([Public Internet Users]) --> CF
+    Internet --> CF
     CF --> WAF
     WAF --> ALB
     ALB --> GW
@@ -124,13 +133,14 @@ graph TB
     GW --> RPS
     GW --> APS
     GW --> AIS
+    GW --> NTS
 
     RIS --> MSK
     MSK --> AES
     MSK --> AIS
 
     ECS --> ElastiCache
-    VPC -. Private VPC Peering .- AtlasDB
+    ECS -.-> AtlasDB
 ```
 
 ---
