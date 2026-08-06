@@ -9,6 +9,7 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN addgroup -S tesp && adduser -S tesp -G tesp
 USER tesp:tesp
-COPY --from=builder /app/target/*.jar app.jar
+ARG SERVICE_NAME
+COPY --from=builder /app/services/${SERVICE_NAME}/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:+UseG1GC", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
