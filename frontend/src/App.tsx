@@ -6,11 +6,12 @@ import { LocaleManagementPanel } from './components/project-config/LocaleManagem
 import { OrgHierarchyManager } from './components/hierarchy/OrgHierarchyManager';
 import { EmployeeDataGrid } from './components/employee/EmployeeDataGrid';
 import { CsvImportWizardModal } from './components/employee/CsvImportWizardModal';
+import { SurveyBuilderCanvas } from './components/survey-builder/SurveyBuilderCanvas';
 import { Branding, FeatureFlags, ProjectResponse } from './types/projectConfig';
 import { EmployeeProfile } from './types/employee';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales' | 'hierarchy' | 'roster'>('wizard');
+  const [activeTab, setActiveTab] = useState<'builder' | 'wizard' | 'customizer' | 'features' | 'locales' | 'hierarchy' | 'roster'>('builder');
   const [isImportWizardOpen, setIsImportWizardOpen] = useState<boolean>(false);
 
   const [demoBranding, setDemoBranding] = useState<Branding>({
@@ -78,6 +79,21 @@ export const App: React.FC = () => {
         </div>
 
         <nav style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setActiveTab('builder')}
+            style={{
+              background: activeTab === 'builder' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Survey Builder Studio
+          </button>
           <button
             onClick={() => setActiveTab('wizard')}
             style={{
@@ -173,6 +189,10 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main style={{ padding: '32px 16px' }}>
+        {activeTab === 'builder' && (
+          <SurveyBuilderCanvas projectId="PRJ-99201" surveyId="SRV-5001" />
+        )}
+
         {activeTab === 'wizard' && (
           <ProjectSetupWizard onSuccess={(proj: ProjectResponse) => console.log('Provisioned:', proj)} />
         )}
