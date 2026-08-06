@@ -5,6 +5,8 @@ export type QuestionType =
   | 'MULTIPLE_CHOICE'
   | 'SINGLE_CHOICE'
   | 'TEXT_OPEN'
+  | 'SHORT_TEXT'
+  | 'LONG_TEXT'
   | 'NUMERIC'
   | 'RATING_STARS'
   | 'SLIDER'
