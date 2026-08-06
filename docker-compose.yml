@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --- Infrastructure Services ---
   mongodb:
@@ -10,6 +8,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
+    networks:
+      - tesp-network
     volumes:
       - mongodb_data:/data/db
 
@@ -19,6 +19,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
+    networks:
+      - tesp-network
     volumes:
       - redis_data:/data
 
@@ -42,6 +44,8 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    networks:
+      - tesp-network
 
   # --- Application Ingress & Gateway ---
   api-gateway:
@@ -57,19 +61,102 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      CONFIG_SERVICE_HOST: tesp-project-config-service
+      ORG_SERVICE_HOST: tesp-organization-service
+      EMP_SERVICE_HOST: tesp-employee-service
+      SURVEY_SERVICE_HOST: tesp-survey-builder-service
+      DIST_SERVICE_HOST: tesp-survey-distribution-service
+      INGEST_SERVICE_HOST: tesp-response-ingestion-service
+      ANALYTICS_SERVICE_HOST: tesp-analytics-engine-service
+      REPORTING_SERVICE_HOST: tesp-reporting-service
+      ACTION_SERVICE_HOST: tesp-action-planning-service
+      AI_SERVICE_HOST: tesp-ai-analytics-service
+      NOTIF_SERVICE_HOST: tesp-notification-service
+      AUDIT_SERVICE_HOST: tesp-audit-service
+    networks:
+      - tesp-network
     depends_on:
       - redis
+      - project-config-service
+      - organization-service
+      - employee-service
+
+  # --- Backend Microservices ---
+  project-config-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: project-config-service
+    container_name: tesp-project-config-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_config_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+
+  organization-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: organization-service
+    container_name: tesp-organization-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_org_db?authSource=admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - kafka
+
+  employee-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: employee-service
+    container_name: tesp-employee-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - kafka
 
   # --- Frontend SPA ---
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../infra/docker/Dockerfile.frontend
+      context: .
+      dockerfile: infra/docker/Dockerfile.frontend
     container_name: tesp-frontend
     ports:
       - "3000:80"
+    networks:
+      - tesp-network
     depends_on:
       - api-gateway
+
+networks:
+  tesp-network:
+    driver: bridge
 
 volumes:
   mongodb_data:

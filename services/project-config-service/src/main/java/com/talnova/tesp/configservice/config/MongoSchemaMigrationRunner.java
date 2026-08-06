@@ -25,15 +25,8 @@ public class MongoSchemaMigrationRunner implements ApplicationRunner {
         log.info("Running MongoDB Schema Validation Migration for 'projects' collection...");
         try {
             if (!mongoOperations.collectionExists("projects")) {
-                MongoJsonSchema schema = MongoJsonSchema.builder()
-                        .required("projectId", "name", "status", "branding", "supportedLocales", "defaultLocale", "features", "version", "isDeleted")
-                        .build();
-
-                CollectionOptions options = CollectionOptions.empty()
-                        .schema(schema);
-
-                mongoOperations.createCollection("projects", options);
-                log.info("Successfully created 'projects' collection with MongoDB $jsonSchema validation.");
+                mongoOperations.createCollection("projects");
+                log.info("Successfully created 'projects' collection.");
             } else {
                 log.info("'projects' collection already exists. Schema validation active.");
             }

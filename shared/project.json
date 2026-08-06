@@ -1,0 +1,20 @@
+{
+  "projectId": "PRJ-99201",
+  "name": "Default Survey Project",
+  "defaultLocale": "en-US",
+  "supportedLocales": ["en-US"],
+  "branding": {
+    "companyName": "Talnova Enterprise",
+    "logoUrl": "https://example.com/logo.png",
+    "primaryColor": "#0f172a",
+    "secondaryColor": "#3b82f6",
+    "customCssUrl": ""
+  },
+  "features": {
+    "enableCsfle": false,
+    "enableAiAnalytics": true,
+    "enableMultiLang": true,
+    "enableRealtimeIngestion": true
+  },
+  "customAttributeDefinitions": []
+}
