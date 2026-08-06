@@ -3,10 +3,11 @@ import { ProjectSetupWizard } from './components/project-config/ProjectSetupWiza
 import { ThemeCustomizer } from './components/project-config/ThemeCustomizer';
 import { FeatureFlagMatrix } from './components/project-config/FeatureFlagMatrix';
 import { LocaleManagementPanel } from './components/project-config/LocaleManagementPanel';
+import { OrgHierarchyManager } from './components/hierarchy/OrgHierarchyManager';
 import { Branding, FeatureFlags, ProjectResponse } from './types/projectConfig';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales'>('wizard');
+  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales' | 'hierarchy'>('wizard');
 
   const [demoBranding, setDemoBranding] = useState<Branding>({
     companyName: 'Aitken Spence PLC',
@@ -97,6 +98,21 @@ export const App: React.FC = () => {
           >
             Locales & Multilingual
           </button>
+          <button
+            onClick={() => setActiveTab('hierarchy')}
+            style={{
+              background: activeTab === 'hierarchy' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Org Hierarchy
+          </button>
         </nav>
       </header>
 
@@ -139,6 +155,10 @@ export const App: React.FC = () => {
               }}
             />
           </div>
+        )}
+
+        {activeTab === 'hierarchy' && (
+          <OrgHierarchyManager projectId="PRJ-99201" />
         )}
       </main>
     </div>
