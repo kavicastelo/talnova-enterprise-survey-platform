@@ -9,13 +9,13 @@ on:
       - 'frontend/**'
       - 'infra/terraform/project_config.tf'
       - '.github/workflows/project-config-ci.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'services/project-config-service/**'
-      - 'shared/tesp-common/**'
-      - 'frontend/**'
-      - 'infra/terraform/project_config.tf'
+  # pull_request:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'services/project-config-service/**'
+  #     - 'shared/tesp-common/**'
+  #     - 'frontend/**'
+  #     - 'infra/terraform/project_config.tf'
 
 jobs:
   backend-test:
