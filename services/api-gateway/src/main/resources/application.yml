@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      routes:
+        - id: project-config-service
+          uri: http://${CONFIG_SERVICE_HOST:localhost}:8081
+          predicates:
+            - Path=/api/v1/projects/**, /api/v1/config/**
+        - id: organization-service
+          uri: http://${ORG_SERVICE_HOST:localhost}:8082
+          predicates:
+            - Path=/api/v1/organization/**
+        - id: employee-service
+          uri: http://${EMP_SERVICE_HOST:localhost}:8083
+          predicates:
+            - Path=/api/v1/employees/**
+        - id: survey-builder-service
+          uri: http://${SURVEY_SERVICE_HOST:localhost}:8084
+          predicates:
+            - Path=/api/v1/surveys/**
+        - id: survey-distribution-service
+          uri: http://${DIST_SERVICE_HOST:localhost}:8085
+          predicates:
+            - Path=/api/v1/distributions/**
+        - id: response-ingestion-service
+          uri: http://${INGEST_SERVICE_HOST:localhost}:8086
+          predicates:
+            - Path=/api/v1/responses/**
+        - id: analytics-engine-service
+          uri: http://${ANALYTICS_SERVICE_HOST:localhost}:8087
+          predicates:
+            - Path=/api/v1/analytics/**
+        - id: reporting-service
+          uri: http://${REPORTING_SERVICE_HOST:localhost}:8088
+          predicates:
+            - Path=/api/v1/reports/**
+        - id: action-planning-service
+          uri: http://${ACTION_SERVICE_HOST:localhost}:8089
+          predicates:
+            - Path=/api/v1/actions/**
+        - id: ai-analytics-service
+          uri: http://${AI_SERVICE_HOST:localhost}:8090
+          predicates:
+            - Path=/api/v1/ai/**
+        - id: notification-service
+          uri: http://${NOTIF_SERVICE_HOST:localhost}:8091
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: audit-service
+          uri: http://${AUDIT_SERVICE_HOST:localhost}:8092
+          predicates:
+            - Path=/api/v1/audit/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus

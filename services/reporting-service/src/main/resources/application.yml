@@ -1,0 +1,15 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: reporting-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/report_db?authSource=admin}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
