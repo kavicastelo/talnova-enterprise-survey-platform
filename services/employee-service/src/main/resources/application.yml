@@ -4,14 +4,29 @@ server:
 spring:
   application:
     name: employee-service
+  threads:
+    virtual:
+      enabled: true
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/tesp_emp_db?authSource=admin}
+      uri: mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/tesp_employee_db
+      auto-index-creation: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+app:
+  csfle:
+    kms-key-arn: ${AWS_KMS_KEY_ARN:arn:aws:kms:us-east-1:123456789012:key/tesp-csfle-key}
+    key-vault-namespace: tesp_employee_db.__keyVault
+  kafka:
+    topics:
+      emp-events: tesp.emp.events.v1
 
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, prometheus
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

@@ -4,10 +4,14 @@ import { ThemeCustomizer } from './components/project-config/ThemeCustomizer';
 import { FeatureFlagMatrix } from './components/project-config/FeatureFlagMatrix';
 import { LocaleManagementPanel } from './components/project-config/LocaleManagementPanel';
 import { OrgHierarchyManager } from './components/hierarchy/OrgHierarchyManager';
+import { EmployeeDataGrid } from './components/employee/EmployeeDataGrid';
+import { CsvImportWizardModal } from './components/employee/CsvImportWizardModal';
 import { Branding, FeatureFlags, ProjectResponse } from './types/projectConfig';
+import { EmployeeProfile } from './types/employee';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales' | 'hierarchy'>('wizard');
+  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales' | 'hierarchy' | 'roster'>('wizard');
+  const [isImportWizardOpen, setIsImportWizardOpen] = useState<boolean>(false);
 
   const [demoBranding, setDemoBranding] = useState<Branding>({
     companyName: 'Aitken Spence PLC',
@@ -25,6 +29,42 @@ export const App: React.FC = () => {
 
   const [supportedLocales, setSupportedLocales] = useState<string[]>(['en-US', 'si-LK', 'ta-LK']);
   const [defaultLocale, setDefaultLocale] = useState<string>('en-US');
+
+  const [demoEmployees] = useState<EmployeeProfile[]>([
+    {
+      id: '1',
+      projectId: 'PRJ-99201',
+      employeeId: 'EMP-10020',
+      fullName: 'John Doe',
+      email: 'john.doe@aitkenspence.lk',
+      nodeId: 'N-201',
+      matrixNodeIds: ['N-301'],
+      status: 'ACTIVE',
+      attributes: { TenureYears: 4, Gender: 'Male', Department: 'Engineering' }
+    },
+    {
+      id: '2',
+      projectId: 'PRJ-99201',
+      employeeId: 'EMP-10021',
+      fullName: 'Jane Smith',
+      email: 'jane.smith@aitkenspence.lk',
+      nodeId: 'N-201',
+      matrixNodeIds: [],
+      status: 'ACTIVE',
+      attributes: { TenureYears: 6, Gender: 'Female', Department: 'Engineering' }
+    },
+    {
+      id: '3',
+      projectId: 'PRJ-99201',
+      employeeId: 'EMP-10022',
+      fullName: 'Robert Paul',
+      email: 'robert.paul@aitkenspence.lk',
+      nodeId: 'N-202',
+      matrixNodeIds: ['N-401'],
+      status: 'TERMINATED',
+      attributes: { TenureYears: 2, Gender: 'Male', Department: 'Operations' }
+    }
+  ]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -113,6 +153,21 @@ export const App: React.FC = () => {
           >
             Org Hierarchy
           </button>
+          <button
+            onClick={() => setActiveTab('roster')}
+            style={{
+              background: activeTab === 'roster' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Employee Roster
+          </button>
         </nav>
       </header>
 
@@ -159,6 +214,23 @@ export const App: React.FC = () => {
 
         {activeTab === 'hierarchy' && (
           <OrgHierarchyManager projectId="PRJ-99201" />
+        )}
+
+        {activeTab === 'roster' && (
+          <div style={{ maxWidth: '1200px', margin: '0 auto', height: '600px' }}>
+            <EmployeeDataGrid
+              employees={demoEmployees}
+              onOpenImportWizard={() => setIsImportWizardOpen(true)}
+              onSelectEmployee={(emp) => console.log('Selected employee:', emp)}
+            />
+
+            <CsvImportWizardModal
+              projectId="PRJ-99201"
+              isOpen={isImportWizardOpen}
+              onClose={() => setIsImportWizardOpen(false)}
+              onImportComplete={(res) => console.log('Import finished:', res)}
+            />
+          </div>
         )}
       </main>
     </div>
