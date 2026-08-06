@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: project-config-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/tesp_config_db?authSource=admin}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
