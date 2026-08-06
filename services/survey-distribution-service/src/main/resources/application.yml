@@ -6,7 +6,7 @@ spring:
     name: survey-distribution-service
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/dist_db?authSource=admin}
+      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/tesp_dist_db?authSource=admin}
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}

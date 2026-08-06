@@ -6,7 +6,7 @@ spring:
     name: action-planning-service
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/action_db?authSource=admin}
+      uri: ${MONGODB_URI:mongodb://admin:password123@localhost:27017/tesp_action_db?authSource=admin}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

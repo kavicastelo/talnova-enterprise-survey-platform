@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <name>TESP API Gateway</name>
-    <description>Spring Cloud Reactive Gateway & Edge Routing</description>
+    <description>Spring Cloud Reactive Gateway and Edge Routing</description>
 
     <dependencies>
         <dependency>

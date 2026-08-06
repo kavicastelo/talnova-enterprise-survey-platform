@@ -1,118 +1,148 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { LayoutDashboard, Network, Users, FileText, Send, BarChart2, Sparkles, AlertTriangle, Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { ProjectSetupWizard } from './components/project-config/ProjectSetupWizard';
+import { ThemeCustomizer } from './components/project-config/ThemeCustomizer';
+import { FeatureFlagMatrix } from './components/project-config/FeatureFlagMatrix';
+import { LocaleManagementPanel } from './components/project-config/LocaleManagementPanel';
+import { Branding, FeatureFlags, ProjectResponse } from './types/projectConfig';
 
-export function App() {
+export const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'wizard' | 'customizer' | 'features' | 'locales'>('wizard');
+
+  const [demoBranding, setDemoBranding] = useState<Branding>({
+    companyName: 'Aitken Spence PLC',
+    logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png',
+    primaryColor: '#1E3A8A',
+    secondaryColor: '#3B82F6'
+  });
+
+  const [demoFeatures, setDemoFeatures] = useState<FeatureFlags>({
+    aiAnalyticsEnabled: true,
+    actionPlanningEnabled: true,
+    kioskModeEnabled: false,
+    smsDistributionEnabled: true
+  });
+
+  const [supportedLocales, setSupportedLocales] = useState<string[]>(['en-US', 'si-LK', 'ta-LK']);
+  const [defaultLocale, setDefaultLocale] = useState<string>('en-US');
+
   return (
-    <Router>
-      <div className="flex h-screen bg-slate-950 text-slate-100">
-        {/* Sidebar */}
-        <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
-          <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg">
-              T
-            </div>
-            <div>
-              <h1 className="font-bold text-sm text-slate-100 leading-tight">TALNOVA TESP</h1>
-              <p className="text-xs text-sky-400 font-medium">Enterprise Analytics</p>
-            </div>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* Top Application Navigation Bar */}
+      <header style={{ background: '#0f172a', color: '#ffffff', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'grid', placeItems: 'center', fontWeight: 800, color: '#ffffff' }}>
+            T
           </div>
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.025em' }}>Talnova Enterprise Survey Platform</span>
+        </div>
 
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Overview" />
-            <NavItem to="/organization" icon={<Network size={18} />} label="Org Hierarchy" />
-            <NavItem to="/employees" icon={<Users size={18} />} label="Employee Roster" />
-            <NavItem to="/surveys" icon={<FileText size={18} />} label="Survey Builder" />
-            <NavItem to="/distributions" icon={<Send size={18} />} label="Distributions" />
-            <NavItem to="/analytics" icon={<BarChart2 size={18} />} label="Heatmap Analytics" />
-            <NavItem to="/ai-insights" icon={<Sparkles size={18} />} label="AI Sentiment" />
-            <NavItem to="/action-plans" icon={<AlertTriangle size={18} />} label="Action Plans" />
-            <NavItem to="/project-settings" icon={<Layers size={18} />} label="Project Config" />
-          </nav>
+        <nav style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setActiveTab('wizard')}
+            style={{
+              background: activeTab === 'wizard' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Provisioning Wizard
+          </button>
+          <button
+            onClick={() => setActiveTab('customizer')}
+            style={{
+              background: activeTab === 'customizer' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Theme Customizer
+          </button>
+          <button
+            onClick={() => setActiveTab('features')}
+            style={{
+              background: activeTab === 'features' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Feature Flags
+          </button>
+          <button
+            onClick={() => setActiveTab('locales')}
+            style={{
+              background: activeTab === 'locales' ? '#334155' : 'transparent',
+              color: '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            Locales & Multilingual
+          </button>
+        </nav>
+      </header>
 
-          <div className="p-4 border-t border-slate-800 text-xs text-slate-500">
-            Platform v1.0.0-SNAPSHOT
+      {/* Main Content Area */}
+      <main style={{ padding: '32px 16px' }}>
+        {activeTab === 'wizard' && (
+          <ProjectSetupWizard onSuccess={(proj: ProjectResponse) => console.log('Provisioned:', proj)} />
+        )}
+
+        {activeTab === 'customizer' && (
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+              White-Label Brand & Accessibility Studio
+            </h2>
+            <p style={{ color: '#64748b', marginBottom: '24px' }}>
+              Test primary and secondary theme color variables with real-time WCAG 2.1 contrast accessibility feedback.
+            </p>
+            <ThemeCustomizer branding={demoBranding} onChange={(b: Branding) => setDemoBranding(b)} />
           </div>
-        </aside>
+        )}
 
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur px-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                Project: PRJ-DEFAULT-001
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-xs text-slate-400">Services Online (8080-8092)</span>
-            </div>
-          </header>
-
-          <div className="flex-1 p-8 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<DashboardOverview />} />
-              <Route path="/organization" element={<PlaceholderView title="Dynamic Organizational Hierarchy Engine (Materialized Path)" />} />
-              <Route path="/employees" element={<PlaceholderView title="Employee Roster & CSFLE PII Vault" />} />
-              <Route path="/surveys" element={<PlaceholderView title="Survey Builder & Question Logic AST" />} />
-              <Route path="/distributions" element={<PlaceholderView title="Multi-Channel Distribution Engine" />} />
-              <Route path="/analytics" element={<PlaceholderView title="2D Heatmap & Differential Privacy Aggregator (N < 5)" />} />
-              <Route path="/ai-insights" element={<PlaceholderView title="Multi-Lingual NLP Sentiment & PII Scrubber" />} />
-              <Route path="/action-plans" element={<PlaceholderView title="Remediation Kanban & Bi-Directional Jira Sync" />} />
-              <Route path="/project-settings" element={<PlaceholderView title="Project Metadata & Configuration Metamodel" />} />
-            </Routes>
+        {activeTab === 'features' && (
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <FeatureFlagMatrix
+              projectId="PRJ-99201"
+              initialFeatures={demoFeatures}
+              onUpdate={(updated) => setDemoFeatures(updated)}
+            />
           </div>
-        </main>
-      </div>
-    </Router>
-  );
-}
+        )}
 
-function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
-    >
-      {icon}
-      <span>{label}</span>
-    </Link>
-  );
-}
-
-function DashboardOverview() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-100">Talnova Platform Command Center</h2>
-        <p className="text-slate-400 text-sm mt-1">Multi-tenant microservice topology & real-time people analytics</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <MetricCard title="Ingestion Throughput" value="5,000 req/s" subtitle="WebFlux Reactive SLA" color="text-sky-400" />
-        <MetricCard title="Anonymity Threshold" value="N < 5" subtitle="Differential Privacy Guard" color="text-emerald-400" />
-        <MetricCard title="Hierarchy Depth" value="Unlimited" subtitle="Materialized Path Tree" color="text-indigo-400" />
-        <MetricCard title="Microservices" value="13 Services" subtitle="Spring Boot 3.3 / Java 21" color="text-purple-400" />
-      </div>
+        {activeTab === 'locales' && (
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <LocaleManagementPanel
+              supportedLocales={supportedLocales}
+              defaultLocale={defaultLocale}
+              onChange={(locs, def) => {
+                setSupportedLocales(locs);
+                setDefaultLocale(def);
+              }}
+            />
+          </div>
+        )}
+      </main>
     </div>
   );
-}
+};
 
-function MetricCard({ title, value, subtitle, color }: { title: string; value: string; subtitle: string; color: string }) {
-  return (
-    <div className="p-6 rounded-xl bg-slate-900 border border-slate-800">
-      <p className="text-xs font-medium text-slate-400">{title}</p>
-      <p className={`text-2xl font-bold mt-2 ${color}`}>{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
-    </div>
-  );
-}
-
-function PlaceholderView({ title }: { title: string }) {
-  return (
-    <div className="p-8 rounded-xl bg-slate-900 border border-slate-800">
-      <h3 className="text-lg font-bold text-slate-200">{title}</h3>
-      <p className="text-sm text-slate-400 mt-2">Module initial architecture ready. Subsystem initialized.</p>
-    </div>
-  );
-}
+export default App;
