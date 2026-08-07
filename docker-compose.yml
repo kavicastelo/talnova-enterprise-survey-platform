@@ -12,6 +12,11 @@ services:
       - tesp-network
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7.2-alpine
@@ -23,6 +28,11 @@ services:
       - tesp-network
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -61,18 +71,18 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      CONFIG_SERVICE_HOST: tesp-project-config-service
-      ORG_SERVICE_HOST: tesp-organization-service
-      EMP_SERVICE_HOST: tesp-employee-service
-      SURVEY_SERVICE_HOST: tesp-survey-builder-service
-      DIST_SERVICE_HOST: tesp-survey-distribution-service
-      INGEST_SERVICE_HOST: tesp-response-ingestion-service
-      ANALYTICS_SERVICE_HOST: tesp-analytics-engine-service
-      REPORTING_SERVICE_HOST: tesp-reporting-service
-      ACTION_SERVICE_HOST: tesp-action-planning-service
-      AI_SERVICE_HOST: tesp-ai-analytics-service
-      NOTIF_SERVICE_HOST: tesp-notification-service
-      AUDIT_SERVICE_HOST: tesp-audit-service
+      PROJECT_CONFIG_SERVICE_URI: http://project-config-service:8081
+      ORGANIZATION_SERVICE_URI: http://organization-service:8082
+      EMPLOYEE_SERVICE_URI: http://employee-service:8083
+      SURVEY_BUILDER_SERVICE_URI: http://survey-builder-service:8084
+      SURVEY_DISTRIBUTION_SERVICE_URI: http://survey-distribution-service:8085
+      RESPONSE_INGESTION_SERVICE_URI: http://response-ingestion-service:8086
+      ANALYTICS_ENGINE_SERVICE_URI: http://analytics-engine-service:8087
+      AI_ANALYTICS_SERVICE_URI: http://ai-analytics-service:8088
+      REPORTING_SERVICE_URI: http://reporting-service:8089
+      ACTION_PLANNING_SERVICE_URI: http://action-planning-service:8090
+      NOTIFICATION_SERVICE_URI: http://notification-service:8091
+      AUDIT_SERVICE_URI: http://audit-service:8092
     networks:
       - tesp-network
     depends_on:
@@ -81,7 +91,7 @@ services:
       - organization-service
       - employee-service
 
-  # --- Backend Microservices ---
+  # --- Backend Microservices (10 Feature Services + 2 Shared Services) ---
   project-config-service:
     build:
       context: .
@@ -96,6 +106,7 @@ services:
       MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_config_db?authSource=admin
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - tesp-network
     depends_on:
@@ -132,8 +143,194 @@ services:
       - "8083:8083"
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      MONGODB_HOST: mongodb
-      MONGODB_PORT: 27017
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_employee_db?authSource=admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - kafka
+
+  survey-builder-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: survey-builder-service
+    container_name: tesp-survey-builder-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_survey_db?authSource=admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - kafka
+
+  survey-distribution-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: survey-distribution-service
+    container_name: tesp-survey-distribution-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_dist_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+      - kafka
+
+  response-ingestion-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: response-ingestion-service
+    container_name: tesp-response-ingestion-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_ingest_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+      - kafka
+
+  analytics-engine-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: analytics-engine-service
+    container_name: tesp-analytics-engine-service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_analytics_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+      - kafka
+
+  ai-analytics-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: ai-analytics-service
+    container_name: tesp-ai-analytics-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_ai_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+      - kafka
+
+  reporting-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: reporting-service
+    container_name: tesp-reporting-service
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_report_db?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - redis
+      - kafka
+
+  action-planning-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: action-planning-service
+    container_name: tesp-action-planning-service
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_action_db?authSource=admin
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - mongodb
+      - kafka
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: notification-service
+    container_name: tesp-notification-service
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks:
+      - tesp-network
+    depends_on:
+      - redis
+      - kafka
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: audit-service
+    container_name: tesp-audit-service
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/tesp_audit_db?authSource=admin
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - tesp-network
