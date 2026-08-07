@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Executive Summary Report</title>
+    <style th:inline="css">
+        :root {
+            --primary-color: [[${reportData.branding.primaryColorHex}]];
+            --secondary-color: [[${reportData.branding.secondaryColorHex}]];
+            --font-family: [[${reportData.branding.fontFamily}]];
+        }
+        body {
+            font-family: var(--font-family), sans-serif;
+            color: #1f2937;
+            margin: 0;
+            padding: 24px;
+            background-color: #ffffff;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .logo {
+            max-height: 48px;
+        }
+        .kpi-container {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            flex: 1;
+            background: #f8fafc;
+            border-left: 4px solid var(--secondary-color);
+            padding: 16px;
+            border-radius: 6px;
+        }
+        .kpi-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 24px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <div class="company-name" th:text="${reportData.branding.companyName}">Company Name</div>
+        <div style="font-size: 14px; color: #64748b;" th:text="${reportData.campaignTitle}">Executive Campaign Report</div>
+    </div>
+    <img class="logo" th:src="${reportData.branding.logoUrl}" alt="Corporate Logo"/>
+</div>
+
+<div class="kpi-container">
+    <div class="kpi-card">
+        <div class="kpi-title">Employee Net Promoter Score (eNPS)</div>
+        <div class="kpi-value" th:text="${#numbers.formatDecimal(reportData.enpsScore, 1, 1)}">+42.0</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-title">Survey Response Rate</div>
+        <div class="kpi-value" th:text="${#numbers.formatDecimal(reportData.responseRate, 1, 1) + '%'}">87.5%</div>
+    </div>
+</div>
+
+<div class="section-title">Key Organizational Strengths</div>
+<ul>
+    <li th:each="s : ${reportData.strengths}" th:text="${s}">Strength Bullet</li>
+</ul>
+
+<div class="section-title">Areas of Concern</div>
+<ul>
+    <li th:each="c : ${reportData.concerns}" th:text="${c}">Concern Bullet</li>
+</ul>
+
+<div class="section-title">Strategic Action Recommendations</div>
+<ul>
+    <li th:each="r : ${reportData.recommendations}" th:text="${r}">Recommendation Bullet</li>
+</ul>
+
+<div class="footer" th:text="${reportData.branding.footerText}">
+    Confidential Corporate Briefing
+</div>
+
+</body>
+</html>
