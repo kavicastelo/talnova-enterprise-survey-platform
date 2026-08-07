@@ -1,4 +1,4 @@
-package com.talnova.tesp.orgservice.config;
+package com.talnova.tesp.distservice.config;
 
 import com.talnova.tesp.common.context.ProjectContextFilter;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +14,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .addFilterBefore(new ProjectContextFilter(), UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .anyRequest().permitAll()
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .addFilterBefore(new ProjectContextFilter(), UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/v1/webhooks/**").permitAll()
+                        .anyRequest().permitAll() // Authorization delegated to API Gateway JWT / RBAC filter
+                );
         return http.build();
     }
 }

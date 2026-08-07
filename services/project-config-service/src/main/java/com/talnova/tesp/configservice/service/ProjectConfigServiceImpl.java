@@ -101,6 +101,10 @@ public class ProjectConfigServiceImpl implements ProjectConfigService {
         ProjectDocument existingDocument = projectRepository.findActiveByProjectId(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException(projectId));
 
+        if (updateDTO.getProjectId() != null && !updateDTO.getProjectId().equals(projectId)) {
+            throw new ProjectValidationException("Cannot alter immutable projectId");
+        }
+
         if (!updateDTO.getSupportedLocales().contains(updateDTO.getDefaultLocale())) {
             throw new ProjectValidationException("Default locale must be present in supported locales");
         }

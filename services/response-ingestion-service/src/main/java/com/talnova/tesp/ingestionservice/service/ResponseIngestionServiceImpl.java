@@ -53,6 +53,10 @@ public class ResponseIngestionServiceImpl implements ResponseIngestionService {
         log.info("Processing reactive response submission for campaignId: {}, surveyId: {}, mode: {}",
                 submission.getCampaignId(), submission.getSurveyId(), submission.getRespondentType());
 
+        if (submission.getProjectId() == null || submission.getProjectId().isBlank()) {
+            return Mono.error(new com.talnova.tesp.ingestionservice.exception.InvalidAnswerException("projectId is mandatory"));
+        }
+
         return answerAstValidatorService.validateAnswers(submission)
                 .then(Mono.defer(() -> {
                     Mono<String> tokenValidationMono;

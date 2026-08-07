@@ -38,32 +38,45 @@ public class AnalyticsController {
     @GetMapping("/dashboard")
     @Operation(summary = "Fetch campaign real-time dashboard overview metrics")
     public ResponseEntity<ApiResponse<DashboardMetricsDTO>> getDashboardMetrics(
-            @RequestHeader(value = "X-Project-ID", required = false, defaultValue = "PRJ-DEFAULT") String projectId,
+            @RequestHeader(value = "X-Project-ID", required = false) String projectIdHeader,
             @RequestHeader(value = "X-User-NodeScope", required = false) String userNodeScope,
             @RequestParam("campaignId") String campaignId,
             @RequestParam(value = "nodeId", required = false, defaultValue = "N-ROOT") String nodeId,
             @RequestParam Map<String, String> rawQueryParams) {
 
+        String resolvedProjectId = resolveProjectId(projectIdHeader);
         abacFilterService.validateNodeScopeAccess(userNodeScope, nodeId);
         Map<String, String> demographicFilters = filterCompilerService.compileFilters(rawQueryParams);
 
-        DashboardMetricsDTO metrics = heatmapAggregatorService.getDashboardMetrics(projectId, campaignId, nodeId, demographicFilters);
+        DashboardMetricsDTO metrics = heatmapAggregatorService.getDashboardMetrics(resolvedProjectId, campaignId, nodeId, demographicFilters);
         return ResponseEntity.ok(ApiResponse.success(metrics, "Dashboard metrics retrieved successfully", UUID.randomUUID().toString()));
     }
 
     @GetMapping("/heatmap")
     @Operation(summary = "Fetch 2D comparative organizational heatmap matrix")
     public ResponseEntity<ApiResponse<HeatmapMatrixDTO>> getHeatmapMatrix(
-            @RequestHeader(value = "X-Project-ID", required = false, defaultValue = "PRJ-DEFAULT") String projectId,
+            @RequestHeader(value = "X-Project-ID", required = false) String projectIdHeader,
             @RequestHeader(value = "X-User-NodeScope", required = false) String userNodeScope,
             @RequestParam("campaignId") String campaignId,
             @RequestParam(value = "parentNodeId", required = false, defaultValue = "N-ROOT") String parentNodeId,
             @RequestParam Map<String, String> rawQueryParams) {
 
+        String resolvedProjectId = resolveProjectId(projectIdHeader);
         abacFilterService.validateNodeScopeAccess(userNodeScope, parentNodeId);
         Map<String, String> demographicFilters = filterCompilerService.compileFilters(rawQueryParams);
 
-        HeatmapMatrixDTO matrix = heatmapAggregatorService.computeHeatmapMatrix(projectId, campaignId, parentNodeId, demographicFilters);
+        HeatmapMatrixDTO matrix = heatmapAggregatorService.computeHeatmapMatrix(resolvedProjectId, campaignId, parentNodeId, demographicFilters);
         return ResponseEntity.ok(ApiResponse.success(matrix, "2D Heatmap matrix retrieved successfully", UUID.randomUUID().toString()));
+    }
+
+    private String resolveProjectId(String headerProjectId) {
+        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
+        }
+        if (headerProjectId != null && !headerProjectId.isBlank() && !"PRJ-DEFAULT".equals(headerProjectId)) {
+            return headerProjectId;
+        }
+        return "PRJ-DEFAULT";
     }
 }

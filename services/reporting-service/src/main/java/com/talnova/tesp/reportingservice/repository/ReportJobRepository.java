@@ -13,6 +13,8 @@ public interface ReportJobRepository extends MongoRepository<ReportJobDocument, 
 
     Optional<ReportJobDocument> findByProjectIdAndJobId(String projectId, String jobId);
 
+    Optional<ReportJobDocument> findByJobId(String jobId);
+
     List<ReportJobDocument> findByProjectIdAndStatus(String projectId, ReportStatus status);
 
     List<ReportJobDocument> findByProjectIdAndCampaignId(String projectId, String campaignId);

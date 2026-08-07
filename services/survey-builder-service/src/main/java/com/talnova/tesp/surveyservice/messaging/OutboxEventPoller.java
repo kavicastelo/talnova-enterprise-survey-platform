@@ -5,6 +5,7 @@ import com.talnova.tesp.surveyservice.domain.model.OutboxStatus;
 import com.talnova.tesp.surveyservice.repository.OutboxEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.List;
  * Scheduled component polling pending outbox events and relaying them asynchronously to Kafka topic 'tesp.survey.events.v1'.
  */
 @Component
+@Profile("!test")
 public class OutboxEventPoller {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxEventPoller.class);

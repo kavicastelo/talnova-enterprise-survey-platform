@@ -28,8 +28,15 @@ public class OutboxEventPoller {
 
     @Scheduled(fixedDelay = 2000)
     public void processOutboxEvents() {
-        List<OutboxEventDocument> pendingEvents = outboxEventRepository.findTop20ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
-        if (pendingEvents.isEmpty()) {
+        List<OutboxEventDocument> pendingEvents;
+        try {
+            pendingEvents = outboxEventRepository.findTop20ByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
+        } catch (Exception ex) {
+            log.debug("Outbox poller skipped execution: {}", ex.getMessage());
+            return;
+        }
+
+        if (pendingEvents == null || pendingEvents.isEmpty()) {
             return;
         }
 

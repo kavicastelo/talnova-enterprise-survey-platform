@@ -22,6 +22,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+
 @Service
 public class BulkImportServiceImpl implements BulkImportService {
 
@@ -29,6 +34,15 @@ public class BulkImportServiceImpl implements BulkImportService {
     private static final int BATCH_SIZE = 5000;
 
     private final MongoOperations mongoOperations;
+
+    @Value("${app.kafka.topics.emp-events:tesp.emp.events.v1}")
+    private String empEventsTopic = "tesp.emp.events.v1";
+
+    @Autowired(required = false)
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public BulkImportServiceImpl(MongoOperations mongoOperations) {
         this.mongoOperations = mongoOperations;
@@ -107,6 +121,27 @@ public class BulkImportServiceImpl implements BulkImportService {
 
         log.info("CSV bulk import job {} finished for project {}: processed={}, inserted={}, updated={}, terminated={}, failed={}",
                 jobId, projectId, totalProcessed, insertedCount, updatedCount, terminatedCount, failedCount);
+
+        if (kafkaTemplate != null && objectMapper != null) {
+            try {
+                Map<String, Object> eventMap = Map.of(
+                        "eventId", "EVT-" + UUID.randomUUID().toString().substring(0, 8),
+                        "eventType", "EMPLOYEE_BULK_IMPORT_COMPLETED",
+                        "projectId", projectId,
+                        "jobId", jobId,
+                        "totalRecords", totalProcessed,
+                        "inserted", insertedCount,
+                        "updated", updatedCount,
+                        "terminated", terminatedCount,
+                        "timestamp", Instant.now().toString()
+                );
+                String payload = objectMapper.writeValueAsString(eventMap);
+                kafkaTemplate.send(empEventsTopic, projectId, payload);
+                log.info("Successfully published EmployeeBulkImportCompletedEvent for job {} to topic {}", jobId, empEventsTopic);
+            } catch (Exception ex) {
+                log.warn("Failed to publish EmployeeBulkImportCompletedEvent: {}", ex.getMessage());
+            }
+        }
 
         return BulkImportResultDTO.builder()
                 .jobId(jobId)

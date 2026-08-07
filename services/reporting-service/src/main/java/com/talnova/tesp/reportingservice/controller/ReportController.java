@@ -75,6 +75,30 @@ public class ReportController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
+    @GetMapping("/jobs/{jobId}")
+    @Operation(summary = "Fetch report job status by jobId", description = "Returns job execution status, pre-signed download URL, and expiration timestamp")
+    public ResponseEntity<ReportJobResponseDTO> getJobStatusByJobId(@PathVariable String jobId) {
+        log.info("Fetching report job status for jobId '{}'", jobId);
+
+        ReportJobDocument jobDoc = reportJobRepository.findByJobId(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Report job not found for jobId: " + jobId));
+
+        ReportJobResponseDTO response = ReportJobResponseDTO.builder()
+                .jobId(jobDoc.getJobId())
+                .projectId(jobDoc.getProjectId())
+                .campaignId(jobDoc.getCampaignId())
+                .reportType(jobDoc.getReportType())
+                .nodeId(jobDoc.getNodeId())
+                .status(jobDoc.getStatus())
+                .downloadUrl(jobDoc.getDownloadUrl())
+                .createdAt(jobDoc.getCreatedAt())
+                .expiresAt(jobDoc.getExpiresAt())
+                .message(jobDoc.getErrorMessage())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/jobs/{projectId}/{jobId}")
     @Operation(summary = "Fetch report job status and download URL", description = "Returns job execution status, pre-signed download URL, and expiration timestamp")
     public ResponseEntity<ReportJobResponseDTO> getJobStatus(

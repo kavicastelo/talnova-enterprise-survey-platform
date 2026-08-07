@@ -26,7 +26,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 @WebMvcTest(AiAnalyticsController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AiAnalyticsControllerTest {
 
     @Autowired

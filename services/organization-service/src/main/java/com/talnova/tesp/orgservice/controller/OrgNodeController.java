@@ -49,8 +49,9 @@ public class OrgNodeController {
     @Operation(summary = "Fetch Organization Node", description = "Fetches organization node details by projectId and nodeId.")
     public ResponseEntity<ApiResponse<OrgNodeResponseDTO>> getNode(
             @PathVariable("nodeId") String nodeId,
-            @RequestParam("projectId") String projectId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam) {
 
+        String projectId = resolveProjectId(projectIdParam);
         OrgNodeResponseDTO response = nodeService.getNodeByProjectIdAndNodeId(projectId, nodeId);
         String correlationId = ProjectContextHolder.getCorrelationId();
         return ResponseEntity.ok(ApiResponse.success(response, "Organization node retrieved successfully", correlationId));
@@ -60,9 +61,10 @@ public class OrgNodeController {
     @Operation(summary = "Re-parent Organization Node", description = "Atomically re-parents a node and bulk updates all descendant sub-tree materialized paths.")
     public ResponseEntity<ApiResponse<OrgNodeResponseDTO>> moveNode(
             @PathVariable("nodeId") String nodeId,
-            @RequestParam("projectId") String projectId,
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
             @RequestBody(required = false) MoveNodeRequestDTO moveRequest) {
 
+        String projectId = resolveProjectId(projectIdParam);
         OrgNodeResponseDTO response = nodeService.moveNode(projectId, nodeId, moveRequest);
         String correlationId = ProjectContextHolder.getCorrelationId();
         return ResponseEntity.ok(ApiResponse.success(response, "Organization node re-parented successfully", correlationId));
@@ -72,8 +74,9 @@ public class OrgNodeController {
     @Operation(summary = "Fetch Sub-Tree Nodes", description = "Fetches all descendant child nodes matching the materialized path prefix of the specified node.")
     public ResponseEntity<ApiResponse<List<OrgNodeResponseDTO>>> getSubTree(
             @PathVariable("nodeId") String nodeId,
-            @RequestParam("projectId") String projectId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam) {
 
+        String projectId = resolveProjectId(projectIdParam);
         List<OrgNodeResponseDTO> response = nodeService.getSubTree(projectId, nodeId);
         String correlationId = ProjectContextHolder.getCorrelationId();
         return ResponseEntity.ok(ApiResponse.success(response, "Sub-tree nodes retrieved successfully", correlationId));
@@ -83,8 +86,9 @@ public class OrgNodeController {
     @Operation(summary = "Fetch Ancestor Lineage Path", description = "Returns ordered array of ancestor nodes from Root down to requested nodeId.")
     public ResponseEntity<ApiResponse<List<OrgNodeResponseDTO>>> getLineage(
             @PathVariable("nodeId") String nodeId,
-            @RequestParam("projectId") String projectId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam) {
 
+        String projectId = resolveProjectId(projectIdParam);
         List<OrgNodeResponseDTO> response = nodeService.getLineage(projectId, nodeId);
         String correlationId = ProjectContextHolder.getCorrelationId();
         return ResponseEntity.ok(ApiResponse.success(response, "Ancestor lineage path retrieved successfully", correlationId));
@@ -92,9 +96,22 @@ public class OrgNodeController {
 
     @GetMapping("/anomalies")
     @Operation(summary = "AI Hierarchy Anomaly Inspection", description = "Scans organizational tree for extreme depth, orphan sub-trees, or single-child chain anomalies.")
-    public ResponseEntity<ApiResponse<HierarchyAnomalyReportDTO>> inspectAnomalies(@RequestParam("projectId") String projectId) {
+    public ResponseEntity<ApiResponse<HierarchyAnomalyReportDTO>> inspectAnomalies(
+            @RequestParam(value = "projectId", required = false) String projectIdParam) {
+        String projectId = resolveProjectId(projectIdParam);
         HierarchyAnomalyReportDTO report = anomalyInspector.inspectAnomalies(projectId);
         String correlationId = ProjectContextHolder.getCorrelationId();
         return ResponseEntity.ok(ApiResponse.success(report, "Hierarchy anomaly inspection completed", correlationId));
+    }
+
+    private String resolveProjectId(String queryParam) {
+        if (queryParam != null && !queryParam.isBlank()) {
+            return queryParam;
+        }
+        String contextProjectId = ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
+        }
+        return queryParam;
     }
 }
