@@ -107,16 +107,34 @@ public class ActionPlanController {
         return ResponseEntity.ok(recommendations);
     }
 
+    @PostMapping
+    public ResponseEntity<ActionPlanResponseDTO> createActionPlan(
+            @Valid @RequestBody ActionPlanDocument plan,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String resolvedProjectId = resolveProjectId(plan.getProjectId(), request);
+        plan.setProjectId(resolvedProjectId);
+        if (plan.getActionPlanId() == null || plan.getActionPlanId().isBlank()) {
+            plan.setActionPlanId("ACT-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        }
+        if (plan.getStatus() == null) {
+            plan.setStatus(ActionStatus.DRAFT);
+        }
+        ActionPlanDocument saved = actionPlanRepository.save(plan);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(ActionPlanResponseDTO.fromDocument(saved));
+    }
+
     @GetMapping("/kanban")
     public ResponseEntity<List<ActionPlanResponseDTO>> getKanbanActionBoard(
-            @RequestParam String projectId,
-            @RequestParam(required = false) String nodeId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestParam(required = false) String nodeId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String resolvedProjectId = resolveProjectId(projectIdParam, request);
         List<ActionPlanDocument> docs;
         if (nodeId != null && !nodeId.isBlank()) {
-            docs = actionPlanRepository.findByProjectIdAndNodeId(projectId, nodeId);
+            docs = actionPlanRepository.findByProjectIdAndNodeId(resolvedProjectId, nodeId);
         } else {
             docs = actionPlanRepository.findAll().stream()
-                    .filter(d -> projectId.equals(d.getProjectId()))
+                    .filter(d -> resolvedProjectId.equals(d.getProjectId()))
                     .collect(Collectors.toList());
         }
         List<ActionPlanResponseDTO> response = docs.stream()
@@ -130,5 +148,22 @@ public class ActionPlanController {
         ActionPlanDocument doc = actionPlanRepository.findByActionPlanId(actionPlanId)
                 .orElseThrow(() -> new IllegalArgumentException("Action plan not found with ID: " + actionPlanId));
         return ResponseEntity.ok(ActionPlanResponseDTO.fromDocument(doc));
+    }
+
+    private String resolveProjectId(String paramProjectId, jakarta.servlet.http.HttpServletRequest request) {
+        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
+        }
+        if (request != null) {
+            String headerProjectId = request.getHeader("X-Project-ID");
+            if (headerProjectId != null && !headerProjectId.isBlank()) {
+                return headerProjectId;
+            }
+        }
+        if (paramProjectId != null && !paramProjectId.isBlank()) {
+            return paramProjectId;
+        }
+        return "PRJ-DEFAULT";
     }
 }

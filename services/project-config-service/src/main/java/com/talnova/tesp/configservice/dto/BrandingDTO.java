@@ -11,6 +11,7 @@ public class BrandingDTO {
     @Schema(example = "Aitken Spence PLC")
     private String companyName;
 
+    @Pattern(regexp = "^https://.*$", message = "Logo URL must use HTTPS")
     @Schema(example = "https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png")
     private String logoUrl;
 

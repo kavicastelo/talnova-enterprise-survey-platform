@@ -35,7 +35,12 @@ public class CampaignController {
     @Operation(summary = "Create & Launch Survey Campaign", description = "Launches a new survey distribution campaign to target audience nodes")
     public ResponseEntity<ApiResponse<CampaignResponseDTO>> createCampaign(
             @Valid @RequestBody CampaignCreateDTO dto,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String resolvedProjectId = resolveProjectId(dto.getProjectId(), request);
+        if (dto.getProjectId() == null || dto.getProjectId().isBlank()) {
+            dto.setProjectId(resolvedProjectId);
+        }
         CampaignResponseDTO created = campaignService.createCampaign(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(created, "Campaign launched successfully", correlationId));
@@ -44,9 +49,11 @@ public class CampaignController {
     @GetMapping("/{campaignId}")
     @Operation(summary = "Get Campaign Details", description = "Fetches survey distribution campaign configuration and real-time metrics")
     public ResponseEntity<ApiResponse<CampaignResponseDTO>> getCampaign(
-            @RequestParam String projectId,
-            @PathVariable String campaignId,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @PathVariable("campaignId") String campaignId,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
         CampaignResponseDTO response = campaignService.getCampaign(projectId, campaignId);
         return ResponseEntity.ok(ApiResponse.success(response, "Campaign details retrieved successfully", correlationId));
     }
@@ -54,11 +61,30 @@ public class CampaignController {
     @PatchMapping("/{campaignId}/status")
     @Operation(summary = "Update Campaign Status", description = "Transitions campaign state (ACTIVE, PAUSED, COMPLETED, CANCELLED)")
     public ResponseEntity<ApiResponse<CampaignResponseDTO>> updateCampaignStatus(
-            @RequestParam String projectId,
-            @PathVariable String campaignId,
-            @RequestParam CampaignStatus status,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @PathVariable("campaignId") String campaignId,
+            @RequestParam("status") CampaignStatus status,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
         CampaignResponseDTO updated = campaignService.updateCampaignStatus(projectId, campaignId, status);
         return ResponseEntity.ok(ApiResponse.success(updated, "Campaign status updated successfully", correlationId));
+    }
+
+    private String resolveProjectId(String queryParam, jakarta.servlet.http.HttpServletRequest request) {
+        if (queryParam != null && !queryParam.isBlank()) {
+            return queryParam;
+        }
+        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
+        }
+        if (request != null) {
+            String headerProjectId = request.getHeader("X-Project-ID");
+            if (headerProjectId != null && !headerProjectId.isBlank()) {
+                return headerProjectId;
+            }
+        }
+        return queryParam;
     }
 }

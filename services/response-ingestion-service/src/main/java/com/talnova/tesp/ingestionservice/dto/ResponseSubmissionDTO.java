@@ -12,7 +12,6 @@ import java.util.List;
 @Schema(description = "Request payload for survey response submission ingestion")
 public class ResponseSubmissionDTO {
 
-    @NotBlank(message = "projectId is mandatory")
     private String projectId;
 
     @NotBlank(message = "campaignId is mandatory")

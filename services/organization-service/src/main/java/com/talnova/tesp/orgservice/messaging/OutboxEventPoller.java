@@ -14,7 +14,10 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!test")
 @EnableScheduling
 public class OutboxEventPoller {
 
@@ -33,8 +36,15 @@ public class OutboxEventPoller {
 
     @Scheduled(fixedDelay = 2000)
     public void processOutboxEvents() {
-        List<OutboxEventDocument> pendingEvents = outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
-        if (pendingEvents.isEmpty()) {
+        List<OutboxEventDocument> pendingEvents;
+        try {
+            pendingEvents = outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxStatus.PENDING);
+        } catch (Exception ex) {
+            log.debug("Org outbox poller skipped: {}", ex.getMessage());
+            return;
+        }
+
+        if (pendingEvents == null || pendingEvents.isEmpty()) {
             return;
         }
 

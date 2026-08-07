@@ -31,7 +31,16 @@ public class ResponseIngestionController {
     @Operation(summary = "Submit Survey Response", description = "Ingests survey response payload asynchronously returning HTTP 202 Accepted (< 50ms SLA)")
     public Mono<ResponseEntity<ApiResponse<IngestionResponseDTO>>> submitResponse(
             @Valid @RequestBody ResponseSubmissionDTO submission,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            @RequestHeader(value = "X-Project-ID", required = false) String projectIdHeader) {
+        if (submission.getProjectId() == null || submission.getProjectId().isBlank()) {
+            String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+            if (contextProjectId != null && !contextProjectId.isBlank()) {
+                submission.setProjectId(contextProjectId);
+            } else if (projectIdHeader != null && !projectIdHeader.isBlank()) {
+                submission.setProjectId(projectIdHeader);
+            }
+        }
         return responseIngestionService.ingestResponse(submission)
                 .map(result -> ResponseEntity.status(HttpStatus.ACCEPTED)
                         .body(ApiResponse.success(result, "Survey response ingested successfully", correlationId)));

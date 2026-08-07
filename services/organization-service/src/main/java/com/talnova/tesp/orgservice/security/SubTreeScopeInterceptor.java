@@ -33,6 +33,9 @@ public class SubTreeScopeInterceptor implements HandlerInterceptor {
 
         String requestURI = request.getRequestURI();
         String projectId = request.getParameter("projectId");
+        if (projectId == null || projectId.isBlank()) {
+            projectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        }
 
         // Parse target nodeId from URI e.g. /api/v1/nodes/N-201/subtree -> N-201
         String nodeId = extractNodeIdFromPath(requestURI);

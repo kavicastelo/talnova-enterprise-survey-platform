@@ -65,6 +65,17 @@ public class AiAnalyticsController {
         return ResponseEntity.ok(updated);
     }
 
+    @GetMapping("/summaries")
+    public ResponseEntity<ExecutiveSummaryDTO> getExecutiveSummary(
+            @RequestParam(value = "campaignId", required = false) String campaignId,
+            @RequestParam(value = "nodeId", required = false, defaultValue = "GLOBAL") String nodeId,
+            @RequestParam(value = "providerName", required = false, defaultValue = "OPENAI") String providerName) {
+        log.info("Fetching executive summary via GET for campaignId '{}', nodeId '{}' using provider '{}' per FR-AI-006",
+                campaignId, nodeId, providerName);
+        ExecutiveSummaryDTO summary = executiveSummaryService.generateNodeExecutiveSummary(nodeId, null, providerName);
+        return ResponseEntity.ok(summary);
+    }
+
     @PostMapping("/summary")
     public ResponseEntity<ExecutiveSummaryDTO> generateExecutiveSummary(
             @RequestParam(required = false, defaultValue = "GLOBAL") String nodeScope,

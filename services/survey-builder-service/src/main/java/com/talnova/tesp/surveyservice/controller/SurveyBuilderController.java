@@ -34,7 +34,12 @@ public class SurveyBuilderController {
     public ResponseEntity<ApiResponse<SurveyResponseDTO>> saveDraft(
             @PathVariable("surveyId") String surveyId,
             @Valid @RequestBody SurveySaveDraftDTO dto,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String resolvedProjectId = resolveProjectId(dto.getProjectId(), request);
+        if (dto.getProjectId() == null || dto.getProjectId().isBlank()) {
+            dto.setProjectId(resolvedProjectId);
+        }
         SurveyResponseDTO response = surveyBuilderService.saveDraft(surveyId, dto);
         return ResponseEntity.ok(ApiResponse.success(response, "Survey draft saved successfully", correlationId));
     }
@@ -43,8 +48,10 @@ public class SurveyBuilderController {
     @Operation(summary = "Fetch Survey AST Payload", description = "Retrieves the latest survey AST payload for a specified surveyId and tenant projectId.")
     public ResponseEntity<ApiResponse<SurveyResponseDTO>> getSurvey(
             @PathVariable("surveyId") String surveyId,
-            @RequestParam("projectId") String projectId,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
         SurveyResponseDTO response = surveyBuilderService.getSurvey(projectId, surveyId);
         return ResponseEntity.ok(ApiResponse.success(response, "Survey AST payload retrieved successfully", correlationId));
     }
@@ -53,8 +60,10 @@ public class SurveyBuilderController {
     @Operation(summary = "Publish Survey Version", description = "Validates and publishes a draft survey version, locking structural edits and setting status to PUBLISHED.")
     public ResponseEntity<ApiResponse<SurveyResponseDTO>> publishSurvey(
             @PathVariable("surveyId") String surveyId,
-            @RequestParam("projectId") String projectId,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
         SurveyResponseDTO response = surveyBuilderService.publishSurvey(projectId, surveyId);
         return ResponseEntity.ok(ApiResponse.success(response, "Survey published successfully", correlationId));
     }
@@ -63,9 +72,28 @@ public class SurveyBuilderController {
     @Operation(summary = "Create New Draft Version", description = "Creates a new editable draft version (N+1) from an existing published survey.")
     public ResponseEntity<ApiResponse<SurveyResponseDTO>> createDraftVersion(
             @PathVariable("surveyId") String surveyId,
-            @RequestParam("projectId") String projectId,
-            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
         SurveyResponseDTO response = surveyBuilderService.createDraftVersion(projectId, surveyId);
         return ResponseEntity.ok(ApiResponse.success(response, "New draft version created successfully", correlationId));
+    }
+
+    private String resolveProjectId(String queryParam, jakarta.servlet.http.HttpServletRequest request) {
+        if (queryParam != null && !queryParam.isBlank()) {
+            return queryParam;
+        }
+        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
+        }
+        if (request != null) {
+            String headerProjectId = request.getHeader("X-Project-ID");
+            if (headerProjectId != null && !headerProjectId.isBlank()) {
+                return headerProjectId;
+            }
+        }
+        return queryParam;
     }
 }

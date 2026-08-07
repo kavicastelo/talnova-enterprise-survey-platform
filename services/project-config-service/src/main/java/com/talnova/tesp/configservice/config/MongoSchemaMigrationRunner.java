@@ -7,9 +7,11 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.schema.MongoJsonSchema;
 import org.springframework.data.mongodb.core.CollectionOptions;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!test")
 public class MongoSchemaMigrationRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(MongoSchemaMigrationRunner.class);
@@ -31,7 +33,7 @@ public class MongoSchemaMigrationRunner implements ApplicationRunner {
                 log.info("'projects' collection already exists. Schema validation active.");
             }
         } catch (Exception ex) {
-            log.warn("MongoSchemaMigrationRunner completed with notice: {}", ex.getMessage());
+            log.debug("MongoSchemaMigrationRunner skipped: {}", ex.getMessage());
         }
     }
 }
