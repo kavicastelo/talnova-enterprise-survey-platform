@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+
+export type ReportType =
+  | 'EXEC_SUMMARY_PDF'
+  | 'DEPT_BREAKDOWN_PDF'
+  | 'RAW_RESPONSES_XLSX'
+  | 'AGGREGATED_SCORES_XLSX';
+
+interface ReportExportModalProps {
+  isOpen: boolean;
+  projectId: string;
+  campaignId: string;
+  onClose: () => void;
+  onJobSubmitted: (jobId: string) => void;
+}
+
+export const ReportExportModal: React.FC<ReportExportModalProps> = ({
+  isOpen,
+  projectId,
+  campaignId,
+  onClose,
+  onJobSubmitted,
+}) => {
+  const [reportType, setReportType] = useState<ReportType>('EXEC_SUMMARY_PDF');
+  const [nodeId, setNodeId] = useState<string>('GLOBAL_ORG');
+  const [passwordProtection, setPasswordProtection] = useState<string>('');
+  const [enablePassword, setEnablePassword] = useState<boolean>(false);
+  const [includeHeatmaps, setIncludeHeatmaps] = useState<boolean>(true);
+  const [includeAiSummary, setIncludeAiSummary] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    if (enablePassword && (passwordProtection.length < 6 || passwordProtection.length > 30)) {
+      setErrorMessage('Password protection must be between 6 and 30 characters (VR-RPT-004)');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        projectId,
+        campaignId,
+        reportType,
+        nodeId,
+        requestedBy: 'USR-HR-DIRECTOR',
+        passwordProtection: enablePassword ? passwordProtection : undefined,
+      };
+
+      const response = await fetch('/api/v1/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok && response.status !== 202) {
+        throw new Error(`Failed to submit report request (${response.status})`);
+      }
+
+      const data = await response.json();
+      onJobSubmitted(data.jobId);
+      onClose();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to trigger report export job');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Export Executive & Analytical Reports</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">White-label PDF briefings & streaming XLSX multi-tab exports</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold"
+          >
+            &times;
+          </button>
+        </div>
+
+        {errorMessage && (
+          <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-800">
+            {errorMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Report Format & Document Type
+            </label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value as ReportType)}
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="EXEC_SUMMARY_PDF">PDF — 10-Page Executive Summary Briefing</option>
+              <option value="DEPT_BREAKDOWN_PDF">PDF — Departmental Breakdown Report</option>
+              <option value="RAW_RESPONSES_XLSX">XLSX — Anonymized Raw Responses Workbook</option>
+              <option value="AGGREGATED_SCORES_XLSX">XLSX — Department Cross-Tabulation Matrix</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Target Organization Node Scope
+            </label>
+            <select
+              value={nodeId}
+              onChange={(e) => setNodeId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="GLOBAL_ORG">Global Enterprise (All Nodes)</option>
+              <option value="IT_DIVISION">IT & Technology Division</option>
+              <option value="ENGINEERING_DEPT">Engineering Department</option>
+              <option value="HR_DIVISION">Human Resources</option>
+            </select>
+          </div>
+
+          <div className="space-y-2 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Report Section Inclusions
+            </span>
+            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={includeHeatmaps}
+                onChange={(e) => setIncludeHeatmaps(e.target.checked)}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Include 2D Department Heatmaps & eNPS Scorecards</span>
+            </label>
+            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={includeAiSummary}
+                onChange={(e) => setIncludeAiSummary(e.target.checked)}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Include AI Executive Recommendations & Risk Flags</span>
+            </label>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+            <label className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={enablePassword}
+                onChange={(e) => setEnablePassword(e.target.checked)}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>PDF Password Protection (VR-RPT-004)</span>
+            </label>
+            {enablePassword && (
+              <input
+                type="password"
+                placeholder="Enter password (6-30 chars)"
+                value={passwordProtection}
+                onChange={(e) => setPasswordProtection(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSubmitting ? 'Queueing Export Job...' : 'Submit Export Job (202 Accepted)'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
