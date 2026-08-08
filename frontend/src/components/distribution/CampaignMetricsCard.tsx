@@ -8,11 +8,11 @@ import { Skeleton } from '../ui/Skeleton';
 import { ErrorState } from '../ui/ErrorState';
 
 interface Props {
-  projectId: string;
   campaignId: string;
+  projectId?: string;
 }
 
-export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) => {
+export const CampaignMetricsCard: React.FC<Props> = ({ campaignId, projectId = 'PRJ-99201' }) => {
   const { data: campaign, isLoading, isError, refetch } = useCampaignQuery(campaignId, projectId);
   const statusMutation = useUpdateCampaignStatusMutation();
 
@@ -23,7 +23,7 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
   if (isLoading) {
     return (
       <Card variant="bordered" padding="24px">
-        <Skeleton height="200px" borderRadius="12px" />
+        <Skeleton height="180px" borderRadius="12px" />
       </Card>
     );
   }
@@ -32,7 +32,7 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
     return (
       <Card variant="bordered" padding="24px">
         <ErrorState
-          title="Campaign Metrics Unavailable"
+          title="Campaign Details Unavailable"
           message="Could not retrieve real-time distribution campaign metrics."
           onRetry={refetch}
         />
@@ -55,9 +55,9 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                📊 {campaign.title}
+                {campaign.title}
               </h3>
               <Badge
                 variant={
@@ -75,7 +75,7 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
               </Badge>
             </div>
             <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0 0' }}>
-              Campaign ID: <code>{campaign.campaignId}</code> | Anonymity Tier: <strong>{campaign.anonymityLevel}</strong>
+              Campaign ID: <code>{campaign.campaignId}</code> | Target Survey: <code>{campaign.surveyId} (v{campaign.surveyVersion})</code>
             </p>
           </div>
 
@@ -107,14 +107,14 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
                 isLoading={statusMutation.isPending}
                 onClick={() => handleStatusChange('COMPLETED')}
               >
-                ✅ Complete Campaign
+                ✓ Mark Completed
               </Button>
             )}
           </div>
         </div>
 
         {/* Real-time Response Metrics Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
           <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>{metrics.totalTargeted.toLocaleString()}</div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Targeted Recipients</div>
@@ -133,6 +133,16 @@ export const LiveCampaignMonitor: React.FC<Props> = ({ projectId, campaignId }) 
           <div style={{ background: '#fefce8', padding: '16px', borderRadius: '10px', border: '1px solid #fef08a', textAlign: 'center' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#854d0e' }}>{metrics.responseRatePercent}%</div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#a16207' }}>Response Rate</div>
+          </div>
+        </div>
+
+        {/* Anonymity & Channel Tags */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#64748b', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+          <div>
+            Anonymity Level: <strong style={{ color: '#0f172a' }}>{campaign.anonymityLevel}</strong>
+          </div>
+          <div>
+            Channels: {campaign.channels?.map((ch) => <Badge key={ch} variant="neutral" style={{ marginLeft: '4px' }}>{ch}</Badge>)}
           </div>
         </div>
       </div>

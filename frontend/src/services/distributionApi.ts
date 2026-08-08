@@ -1,49 +1,27 @@
-import { CampaignCreate, CampaignResponse, CampaignStatus, OptimalDispatchPrediction } from '../types/distribution';
+import {
+  CampaignCreateRequest,
+  CampaignResponse,
+  CampaignStatus,
+  OptimalDispatchPredictionResponse,
+} from '../types/distribution';
+import { distributionApi } from '../features/distribution/api/distributionApi';
 
-const API_BASE = '/api/v1';
-
-export async function createCampaign(payload: CampaignCreate): Promise<CampaignResponse> {
-  const res = await fetch(`${API_BASE}/campaigns`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || 'Failed to create survey campaign');
-  }
-  return json.data;
+export async function createCampaign(payload: CampaignCreateRequest): Promise<CampaignResponse> {
+  return distributionApi.createCampaign(payload);
 }
 
 export async function getCampaign(projectId: string, campaignId: string): Promise<CampaignResponse> {
-  const res = await fetch(`${API_BASE}/campaigns/${campaignId}?projectId=${encodeURIComponent(projectId)}`);
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || 'Failed to fetch campaign details');
-  }
-  return json.data;
+  return distributionApi.getCampaign(campaignId, projectId);
 }
 
 export async function updateCampaignStatus(projectId: string, campaignId: string, status: CampaignStatus): Promise<CampaignResponse> {
-  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/status?projectId=${encodeURIComponent(projectId)}&status=${encodeURIComponent(status)}`, {
-    method: 'PATCH',
-  });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || 'Failed to update campaign status');
-  }
-  return json.data;
+  return distributionApi.updateCampaignStatus(campaignId, status, projectId);
 }
 
-export async function predictOptimalDispatchTime(projectId: string, employeeId: string, department: string): Promise<OptimalDispatchPrediction> {
-  const res = await fetch(`${API_BASE}/distribution/ai-optimal-time`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ projectId, employeeId, department }),
+export async function predictOptimalDispatchTime(projectId: string): Promise<OptimalDispatchPredictionResponse> {
+  return distributionApi.predictOptimalTime({
+    projectId,
+    channel: 'EMAIL',
+    targetAudienceCount: 1000,
   });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || 'Failed to predict optimal dispatch time');
-  }
-  return json.data;
 }

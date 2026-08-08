@@ -26,8 +26,10 @@ import { EmployeeRosterPage } from '../features/employee/pages/EmployeeRosterPag
 // FEAT-004 Survey Builder Domain Pages
 import { SurveyBuilderPage } from '../features/survey-builder/pages/SurveyBuilderPage';
 
+// FEAT-005 Survey Distribution Domain Pages
+import { DistributionStudioPage } from '../features/distribution/pages/DistributionStudioPage';
+
 // Domain Component Wrappers
-import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
 import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
 import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
 import { ReportExportModal } from '../components/reporting/ReportExportModal';
@@ -53,16 +55,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const DistributionView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Survey Campaign Distribution Studio" subtitle="Dispatch multi-channel surveys with single-use tokens" />
-      <CampaignLaunchWizard projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" surveyTitle="Employee Engagement Survey 2026" />
-    </div>
-  );
-};
 
 const AnalyticsView: React.FC = () => {
   return (
@@ -197,7 +189,8 @@ export const router = createBrowserRouter([
       // FEAT-004 Survey Builder Domain Routes
       { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderPage /></RoleGate> },
 
-      { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionView /></RoleGate> },
+      // FEAT-005 Survey Distribution Domain Routes
+      { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionStudioPage /></RoleGate> },
 
       { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsView /></RoleGate> },
       { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsView /></RoleGate></FeatureGate> },
