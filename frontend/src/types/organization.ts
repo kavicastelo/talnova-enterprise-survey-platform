@@ -1,12 +1,28 @@
 export type NodeStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
-export interface OrgNode {
-  id: string;
+export type NodeType = 'COMPANY' | 'DIVISION' | 'DEPARTMENT' | 'TEAM' | 'UNIT' | 'LOCATION';
+
+export interface CreateNodeRequest {
+  projectId: string;
+  nodeId: string;
+  name: string;
+  type: NodeType | string;
+  parentId?: string;
+  displayOrder?: number;
+  attributes?: Record<string, any>;
+}
+
+export interface MoveNodeRequest {
+  newParentId?: string;
+}
+
+export interface OrgNodeResponse {
+  id?: string;
   projectId: string;
   nodeId: string;
   name: string;
   type: string;
-  parentId?: string | null;
+  parentId?: string;
   path: string;
   depth: number;
   displayOrder?: number;
@@ -15,20 +31,7 @@ export interface OrgNode {
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface CreateNodeRequest {
-  projectId: string;
-  nodeId: string;
-  name: string;
-  type: string;
-  parentId?: string | null;
-  displayOrder?: number;
-  attributes?: Record<string, any>;
-}
-
-export interface MoveNodeRequest {
-  newParentId?: string | null;
+  children?: OrgNodeResponse[];
 }
 
 export interface AnomalyDetail {
@@ -44,12 +47,4 @@ export interface HierarchyAnomalyReport {
   totalNodesInspected: number;
   totalAnomaliesDetected: number;
   anomalies: AnomalyDetail[];
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-  correlationId?: string;
 }

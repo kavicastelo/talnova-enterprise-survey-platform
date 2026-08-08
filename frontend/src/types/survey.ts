@@ -2,15 +2,15 @@ export type QuestionType =
   | 'LIKERT'
   | 'NPS'
   | 'MATRIX'
-  | 'MULTIPLE_CHOICE'
   | 'SINGLE_CHOICE'
-  | 'TEXT_OPEN'
+  | 'MULTIPLE_CHOICE'
+  | 'RANKING'
   | 'SHORT_TEXT'
   | 'LONG_TEXT'
   | 'NUMERIC'
-  | 'RATING_STARS'
-  | 'SLIDER'
-  | 'DATE_PICKER';
+  | 'DATE';
+
+export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
 
 export type LogicOperator = 'EQUALS' | 'NOT_EQUALS' | 'LESS_THAN' | 'GREATER_THAN';
 
@@ -45,9 +45,7 @@ export interface SurveyPage {
   sections: SurveySection[];
 }
 
-export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'ACTIVE' | 'ARCHIVED';
-
-export interface SurveySaveDraft {
+export interface SurveySaveDraftRequest {
   projectId: string;
   surveyId: string;
   title: Record<string, string>;
@@ -56,7 +54,7 @@ export interface SurveySaveDraft {
 }
 
 export interface SurveyResponse {
-  id: string;
+  id?: string;
   projectId: string;
   surveyId: string;
   version: number;
@@ -64,8 +62,31 @@ export interface SurveyResponse {
   description?: Record<string, string>;
   status: SurveyStatus;
   pages: SurveyPage[];
-  versionHistory?: number[];
   publishedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  versionHistory?: number[];
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface QuestionLibraryTemplate {
+  libraryId: string;
+  category: string;
+  themeGroup: string;
+  defaultPrompt: Record<string, string>;
+  questionType: QuestionType;
+  validationRules?: Record<string, any>;
+}
+
+export interface AIBiasAnalysisRequest {
+  questionPrompt: string;
+  locale?: string;
+}
+
+export interface AIBiasAnalysisResponse {
+  riskScore: number;
+  biasDetected: boolean;
+  biasCategory?: string;
+  message: string;
+  suggestedPrompts: string[];
 }

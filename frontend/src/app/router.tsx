@@ -11,15 +11,25 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { AccessDeniedPage } from '../pages/auth/AccessDeniedPage';
 import { ExecutiveDashboardPage } from '../pages/dashboard/ExecutiveDashboardPage';
 
+// FEAT-001 Project Config Domain Pages
+import { ProjectProvisioningPage } from '../features/project-config/pages/ProjectProvisioningPage';
+import { ThemeBrandingPage } from '../features/project-config/pages/ThemeBrandingPage';
+import { FeatureFlagPage } from '../features/project-config/pages/FeatureFlagPage';
+import { LocaleManagementPage } from '../features/project-config/pages/LocaleManagementPage';
+
+// FEAT-002 Organization Hierarchy Domain Pages
+import { OrgHierarchyPage } from '../features/organization/pages/OrgHierarchyPage';
+
+// FEAT-003 Employee Management Domain Pages
+import { EmployeeRosterPage } from '../features/employee/pages/EmployeeRosterPage';
+
+// FEAT-004 Survey Builder Domain Pages
+import { SurveyBuilderPage } from '../features/survey-builder/pages/SurveyBuilderPage';
+
+// FEAT-005 Survey Distribution Domain Pages
+import { DistributionStudioPage } from '../features/distribution/pages/DistributionStudioPage';
+
 // Domain Component Wrappers
-import { ProjectSetupWizard } from '../components/project-config/ProjectSetupWizard';
-import { ThemeCustomizer } from '../components/project-config/ThemeCustomizer';
-import { FeatureFlagMatrix } from '../components/project-config/FeatureFlagMatrix';
-import { LocaleManagementPanel } from '../components/project-config/LocaleManagementPanel';
-import { OrgHierarchyManager } from '../components/hierarchy/OrgHierarchyManager';
-import { EmployeeDataGrid } from '../components/employee/EmployeeDataGrid';
-import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
-import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
 import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
 import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
 import { ReportExportModal } from '../components/reporting/ReportExportModal';
@@ -45,95 +55,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const FeatureFlagMatrixView: React.FC = () => {
-  const { activeProject, featureFlags, updateFeatureFlags } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Feature Flag Matrix" subtitle="Dynamic tenant feature toggle management" />
-      <FeatureFlagMatrix
-        projectId={activeProject?.projectId || 'PRJ-99201'}
-        initialFeatures={featureFlags}
-        onUpdate={(updated) => updateFeatureFlags(updated)}
-      />
-    </div>
-  );
-};
-
-const ThemeCustomizerView: React.FC = () => {
-  const { branding, updateBranding } = useTenant();
-  return (
-    <div>
-      <PageHeader title="White-Label Brand & Accessibility Studio" subtitle="Real-time WCAG 2.1 contrast accessibility feedback" />
-      <ThemeCustomizer branding={branding} onChange={(b) => updateBranding(b)} />
-    </div>
-  );
-};
-
-const LocaleManagementView: React.FC = () => {
-  const { activeProject } = useTenant();
-  const [locales, setLocales] = React.useState<string[]>(activeProject?.supportedLocales || ['en-US', 'si-LK', 'ta-LK']);
-  const [def, setDef] = React.useState<string>(activeProject?.defaultLocale || 'en-US');
-
-  return (
-    <div>
-      <PageHeader title="Locales & Multilingual Management" subtitle="Manage translation packs and primary survey language" />
-      <LocaleManagementPanel
-        supportedLocales={locales}
-        defaultLocale={def}
-        onChange={(locs, d) => {
-          setLocales(locs);
-          setDef(d);
-        }}
-      />
-    </div>
-  );
-};
-
-const OrgHierarchyView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Organizational Hierarchy & Tree Canvas" subtitle="N-ary org tree visualizer and anomaly inspection" />
-      <OrgHierarchyManager projectId={activeProject?.projectId || 'PRJ-99201'} />
-    </div>
-  );
-};
-
-const EmployeeRosterView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Employee Roster Studio" subtitle="Manage employee profiles, matrix reporting, and CSV imports" />
-      <EmployeeDataGrid
-        employees={[
-          { id: '1', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10020', fullName: 'Alexander Aitken', email: 'a.aitken@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: ['N-301'], status: 'ACTIVE', attributes: { TenureYears: 4, Gender: 'Male', Department: 'Engineering' } },
-          { id: '2', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10021', fullName: 'Jane Cooper', email: 'j.cooper@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: [], status: 'ACTIVE', attributes: { TenureYears: 6, Gender: 'Female', Department: 'Engineering' } },
-        ]}
-      />
-    </div>
-  );
-};
-
-const SurveyBuilderView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Survey Builder Studio" subtitle="Drag & drop question canvas, logic branching, and publishing" />
-      <SurveyBuilderCanvas projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" />
-    </div>
-  );
-};
-
-const DistributionView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Survey Campaign Distribution Studio" subtitle="Dispatch multi-channel surveys with single-use tokens" />
-      <CampaignLaunchWizard projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" surveyTitle="Employee Engagement Survey 2026" />
-    </div>
-  );
-};
 
 const AnalyticsView: React.FC = () => {
   return (
@@ -253,16 +174,23 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <ExecutiveDashboardPage /> },
       { path: '/access-denied', element: <AccessDeniedPage /> },
 
-      { path: '/settings/projects', element: <RoleGate allowedRoles={['SUPER_ADMIN']}><ProjectSetupWizard onSuccess={() => {}} /></RoleGate> },
-      { path: '/settings/branding', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><ThemeCustomizerView /></RoleGate> },
-      { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagMatrixView /></RoleGate> },
-      { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementView /></RoleGate> },
+      // FEAT-001 Project Config Domain Routes
+      { path: '/settings/projects', element: <RoleGate allowedRoles={['SUPER_ADMIN']}><ProjectProvisioningPage /></RoleGate> },
+      { path: '/settings/branding', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><ThemeBrandingPage /></RoleGate> },
+      { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagPage /></RoleGate> },
+      { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementPage /></RoleGate> },
 
-      { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyView /></RoleGate> },
-      { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterView /></RoleGate> },
+      // FEAT-002 Organization Hierarchy Domain Routes
+      { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyPage /></RoleGate> },
 
-      { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderView /></RoleGate> },
-      { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionView /></RoleGate> },
+      // FEAT-003 Employee Management Domain Routes
+      { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterPage /></RoleGate> },
+
+      // FEAT-004 Survey Builder Domain Routes
+      { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderPage /></RoleGate> },
+
+      // FEAT-005 Survey Distribution Domain Routes
+      { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionStudioPage /></RoleGate> },
 
       { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsView /></RoleGate> },
       { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsView /></RoleGate></FeatureGate> },

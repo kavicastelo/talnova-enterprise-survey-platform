@@ -1,3 +1,7 @@
+export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+
+export type DataType = 'STRING' | 'NUMERIC' | 'ENUM' | 'DATE';
+
 export interface Branding {
   companyName: string;
   logoUrl?: string;
@@ -13,10 +17,10 @@ export interface FeatureFlags {
   smsDistributionEnabled: boolean;
 }
 
-export interface CustomAttributeDefinition {
+export interface CustomAttributeDef {
   key: string;
   displayName: string;
-  dataType: 'STRING' | 'NUMERIC' | 'ENUM' | 'DATE';
+  dataType: DataType;
   allowedValues?: string[];
 }
 
@@ -26,23 +30,23 @@ export interface ProjectCreateRequest {
   branding: Branding;
   supportedLocales: string[];
   defaultLocale: string;
-  features: FeatureFlags;
-  customAttributeDefinitions?: CustomAttributeDefinition[];
+  features?: FeatureFlags;
+  customAttributeDefinitions?: CustomAttributeDef[];
 }
 
 export interface ProjectResponse {
-  id: string;
+  id?: string;
   projectId: string;
   name: string;
-  status: 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+  status: ProjectStatus;
   branding: Branding;
   supportedLocales: string[];
   defaultLocale: string;
   features: FeatureFlags;
-  customAttributeDefinitions: CustomAttributeDefinition[];
-  version: number;
-  createdAt: string;
-  updatedAt: string;
+  customAttributeDefinitions?: CustomAttributeDef[];
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PublicTheme {
@@ -63,6 +67,6 @@ export interface ContrastValidationRequest {
 export interface ContrastValidationResponse {
   passed: boolean;
   contrastRatio: number;
-  wcagLevel: 'AAA' | 'AA' | 'FAIL';
+  wcagLevel: 'FAIL' | 'AA' | 'AAA';
   recommendation: string;
 }

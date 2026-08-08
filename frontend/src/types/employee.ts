@@ -1,22 +1,6 @@
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
 
-export interface EmployeeProfile {
-  id: string;
-  projectId: string;
-  employeeId: string;
-  email?: string;
-  fullName?: string;
-  phoneNumber?: string;
-  nodeId: string;
-  matrixNodeIds?: string[];
-  status: EmployeeStatus;
-  attributes?: Record<string, any>;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface CreateEmployeePayload {
+export interface CreateEmployeeRequest {
   projectId: string;
   employeeId: string;
   email?: string;
@@ -28,7 +12,7 @@ export interface CreateEmployeePayload {
   attributes?: Record<string, any>;
 }
 
-export interface UpdateEmployeePayload {
+export interface UpdateEmployeeRequest {
   email?: string;
   fullName?: string;
   phoneNumber?: string;
@@ -38,11 +22,20 @@ export interface UpdateEmployeePayload {
   attributes?: Record<string, any>;
 }
 
-export interface HeaderMapping {
-  sourceHeader: string;
-  targetAttributeKey: string;
-  confidence: number;
-  isCoreField: boolean;
+export interface EmployeeResponse {
+  id?: string;
+  projectId: string;
+  employeeId: string;
+  email?: string;
+  fullName: string;
+  phoneNumber?: string;
+  nodeId: string;
+  matrixNodeIds?: string[];
+  status: EmployeeStatus;
+  attributes?: Record<string, any>;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BulkImportResult {
@@ -54,4 +47,12 @@ export interface BulkImportResult {
   terminatedCount: number;
   failedCount: number;
   errors: string[];
+}
+
+export interface HrisSyncRequest {
+  projectId: string;
+  provider: 'WORKDAY_RAAS' | 'SUCCESSFACTORS_ODATA' | 'BAMBOOHR';
+  apiEndpoint: string;
+  apiKey?: string;
+  autoTerminateMissing?: boolean;
 }
