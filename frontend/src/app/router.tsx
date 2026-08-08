@@ -29,8 +29,10 @@ import { SurveyBuilderPage } from '../features/survey-builder/pages/SurveyBuilde
 // FEAT-005 Survey Distribution Domain Pages
 import { DistributionStudioPage } from '../features/distribution/pages/DistributionStudioPage';
 
+// FEAT-007 Analytics Engine Domain Pages
+import { AnalyticsDashboardPage } from '../features/analytics/pages/AnalyticsDashboardPage';
+
 // Domain Component Wrappers
-import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
 import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
 import { ReportExportModal } from '../components/reporting/ReportExportModal';
 import { ActionKanbanBoardPage } from '../pages/ActionKanbanBoardPage';
@@ -55,37 +57,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const AnalyticsView: React.FC = () => {
-  return (
-    <div>
-      <PageHeader title="Analytics Engine & Heatmap Grid" subtitle="Organizational scorecards protected by differential privacy (N < 5)" />
-      <OrganizationalHeatmapGrid
-        data={{
-          parentNodeId: 'ROOT',
-          rowNodes: [
-            { id: 'N-201', name: 'Engineering & Technology' },
-            { id: 'N-202', name: 'Operations & Logistics' },
-            { id: 'N-203', name: 'Human Resources' },
-          ],
-          columnThemes: [
-            { id: 'QG-01', name: 'Leadership Trust' },
-            { id: 'QG-02', name: 'Workload Balance' },
-            { id: 'QG-03', name: 'Career Mobility' },
-          ],
-          cells: [
-            { nodeId: 'N-201', groupId: 'QG-01', sampleSize: 24, score: 84.5, colorIntensity: 'GREEN' },
-            { nodeId: 'N-201', groupId: 'QG-02', sampleSize: 22, score: 62.0, colorIntensity: 'YELLOW' },
-            { nodeId: 'N-201', groupId: 'QG-03', sampleSize: 3, score: null, colorIntensity: 'GREY' },
-            { nodeId: 'N-202', groupId: 'QG-01', sampleSize: 18, score: 71.2, colorIntensity: 'GREEN' },
-            { nodeId: 'N-202', groupId: 'QG-02', sampleSize: 15, score: 48.0, colorIntensity: 'RED' },
-            { nodeId: 'N-202', groupId: 'QG-03', sampleSize: 16, score: 65.5, colorIntensity: 'YELLOW' },
-          ],
-        }}
-      />
-    </div>
-  );
-};
 
 const AiAnalyticsView: React.FC = () => {
   return (
@@ -192,7 +163,9 @@ export const router = createBrowserRouter([
       // FEAT-005 Survey Distribution Domain Routes
       { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionStudioPage /></RoleGate> },
 
-      { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsView /></RoleGate> },
+      // FEAT-007 Analytics Engine Domain Routes
+      { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsDashboardPage /></RoleGate> },
+
       { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsView /></RoleGate></FeatureGate> },
 
       { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportsView /></RoleGate> },
