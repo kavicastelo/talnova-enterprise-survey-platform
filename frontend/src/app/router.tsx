@@ -1,0 +1,277 @@
+import React from 'react';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { MainPlatformLayout } from '../layouts/MainPlatformLayout';
+import { AuthLayout } from '../layouts/AuthLayout';
+import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { RoleGate } from '../components/auth/RoleGate';
+import { FeatureGate } from '../components/auth/FeatureGate';
+
+// Pages
+import { LoginPage } from '../pages/auth/LoginPage';
+import { AccessDeniedPage } from '../pages/auth/AccessDeniedPage';
+import { ExecutiveDashboardPage } from '../pages/dashboard/ExecutiveDashboardPage';
+
+// Domain Component Wrappers
+import { ProjectSetupWizard } from '../components/project-config/ProjectSetupWizard';
+import { ThemeCustomizer } from '../components/project-config/ThemeCustomizer';
+import { FeatureFlagMatrix } from '../components/project-config/FeatureFlagMatrix';
+import { LocaleManagementPanel } from '../components/project-config/LocaleManagementPanel';
+import { OrgHierarchyManager } from '../components/hierarchy/OrgHierarchyManager';
+import { EmployeeDataGrid } from '../components/employee/EmployeeDataGrid';
+import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
+import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
+import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
+import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
+import { ReportExportModal } from '../components/reporting/ReportExportModal';
+import { ActionKanbanBoardPage } from '../pages/ActionKanbanBoardPage';
+import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
+import { SurveyPlayerPage } from '../components/player/SurveyPlayerPage';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Card } from '../components/ui/Card';
+import { useTenant } from '../context/TenantContext';
+import { SurveyResponse } from '../types/survey';
+
+const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = ({ title, subtitle, icon }) => (
+  <div>
+    <PageHeader title={title} subtitle={subtitle} />
+    <Card variant="bordered">
+      <div style={{ padding: '32px', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '12px' }}>{icon}</div>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>{title} Module Connected</h3>
+        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+          This business domain interface is ready for production feature integration against the API Gateway (:8080).
+        </p>
+      </div>
+    </Card>
+  </div>
+);
+
+const FeatureFlagMatrixView: React.FC = () => {
+  const { activeProject, featureFlags, updateFeatureFlags } = useTenant();
+  return (
+    <div>
+      <PageHeader title="Feature Flag Matrix" subtitle="Dynamic tenant feature toggle management" />
+      <FeatureFlagMatrix
+        projectId={activeProject?.projectId || 'PRJ-99201'}
+        initialFeatures={featureFlags}
+        onUpdate={(updated) => updateFeatureFlags(updated)}
+      />
+    </div>
+  );
+};
+
+const ThemeCustomizerView: React.FC = () => {
+  const { branding, updateBranding } = useTenant();
+  return (
+    <div>
+      <PageHeader title="White-Label Brand & Accessibility Studio" subtitle="Real-time WCAG 2.1 contrast accessibility feedback" />
+      <ThemeCustomizer branding={branding} onChange={(b) => updateBranding(b)} />
+    </div>
+  );
+};
+
+const LocaleManagementView: React.FC = () => {
+  const { activeProject } = useTenant();
+  const [locales, setLocales] = React.useState<string[]>(activeProject?.supportedLocales || ['en-US', 'si-LK', 'ta-LK']);
+  const [def, setDef] = React.useState<string>(activeProject?.defaultLocale || 'en-US');
+
+  return (
+    <div>
+      <PageHeader title="Locales & Multilingual Management" subtitle="Manage translation packs and primary survey language" />
+      <LocaleManagementPanel
+        supportedLocales={locales}
+        defaultLocale={def}
+        onChange={(locs, d) => {
+          setLocales(locs);
+          setDef(d);
+        }}
+      />
+    </div>
+  );
+};
+
+const OrgHierarchyView: React.FC = () => {
+  const { activeProject } = useTenant();
+  return (
+    <div>
+      <PageHeader title="Organizational Hierarchy & Tree Canvas" subtitle="N-ary org tree visualizer and anomaly inspection" />
+      <OrgHierarchyManager projectId={activeProject?.projectId || 'PRJ-99201'} />
+    </div>
+  );
+};
+
+const EmployeeRosterView: React.FC = () => {
+  const { activeProject } = useTenant();
+  return (
+    <div>
+      <PageHeader title="Employee Roster Studio" subtitle="Manage employee profiles, matrix reporting, and CSV imports" />
+      <EmployeeDataGrid
+        employees={[
+          { id: '1', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10020', fullName: 'Alexander Aitken', email: 'a.aitken@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: ['N-301'], status: 'ACTIVE', attributes: { TenureYears: 4, Gender: 'Male', Department: 'Engineering' } },
+          { id: '2', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10021', fullName: 'Jane Cooper', email: 'j.cooper@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: [], status: 'ACTIVE', attributes: { TenureYears: 6, Gender: 'Female', Department: 'Engineering' } },
+        ]}
+      />
+    </div>
+  );
+};
+
+const SurveyBuilderView: React.FC = () => {
+  const { activeProject } = useTenant();
+  return (
+    <div>
+      <PageHeader title="Survey Builder Studio" subtitle="Drag & drop question canvas, logic branching, and publishing" />
+      <SurveyBuilderCanvas projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" />
+    </div>
+  );
+};
+
+const DistributionView: React.FC = () => {
+  const { activeProject } = useTenant();
+  return (
+    <div>
+      <PageHeader title="Survey Campaign Distribution Studio" subtitle="Dispatch multi-channel surveys with single-use tokens" />
+      <CampaignLaunchWizard projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" surveyTitle="Employee Engagement Survey 2026" />
+    </div>
+  );
+};
+
+const AnalyticsView: React.FC = () => {
+  return (
+    <div>
+      <PageHeader title="Analytics Engine & Heatmap Grid" subtitle="Organizational scorecards protected by differential privacy (N < 5)" />
+      <OrganizationalHeatmapGrid
+        data={{
+          parentNodeId: 'ROOT',
+          rowNodes: [
+            { id: 'N-201', name: 'Engineering & Technology' },
+            { id: 'N-202', name: 'Operations & Logistics' },
+            { id: 'N-203', name: 'Human Resources' },
+          ],
+          columnThemes: [
+            { id: 'QG-01', name: 'Leadership Trust' },
+            { id: 'QG-02', name: 'Workload Balance' },
+            { id: 'QG-03', name: 'Career Mobility' },
+          ],
+          cells: [
+            { nodeId: 'N-201', groupId: 'QG-01', sampleSize: 24, score: 84.5, colorIntensity: 'GREEN' },
+            { nodeId: 'N-201', groupId: 'QG-02', sampleSize: 22, score: 62.0, colorIntensity: 'YELLOW' },
+            { nodeId: 'N-201', groupId: 'QG-03', sampleSize: 3, score: null, colorIntensity: 'GREY' },
+            { nodeId: 'N-202', groupId: 'QG-01', sampleSize: 18, score: 71.2, colorIntensity: 'GREEN' },
+            { nodeId: 'N-202', groupId: 'QG-02', sampleSize: 15, score: 48.0, colorIntensity: 'RED' },
+            { nodeId: 'N-202', groupId: 'QG-03', sampleSize: 16, score: 65.5, colorIntensity: 'YELLOW' },
+          ],
+        }}
+      />
+    </div>
+  );
+};
+
+const AiAnalyticsView: React.FC = () => {
+  return (
+    <div>
+      <PageHeader title="AI Analytics & Sentiment Studio" subtitle="NLP sentiment extraction, topic modeling, and LLM executive summaries" />
+      <SentimentAnalyticsPanel />
+    </div>
+  );
+};
+
+const ReportsView: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(true);
+  const { activeProject } = useTenant();
+
+  return (
+    <div>
+      <PageHeader title="Report Job Generator" subtitle="Async PDF and Excel report generation with polling progress status" />
+      <ReportExportModal
+        projectId={activeProject?.projectId || 'PRJ-99201'}
+        campaignId="CMP-101"
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onJobSubmitted={(jobId) => alert(`Report export job queued with ID: ${jobId}`)}
+      />
+    </div>
+  );
+};
+
+const DEFAULT_DEMO_SURVEY: SurveyResponse = {
+  id: 'SRV-5001',
+  surveyId: 'SRV-5001',
+  projectId: 'PRJ-99201',
+  title: { 'en-US': 'Employee Engagement Survey 2026' },
+  description: { 'en-US': 'Group-wide annual employee engagement and culture audit.' },
+  pages: [],
+  version: 1,
+  status: 'PUBLISHED',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+export const router = createBrowserRouter([
+  // Public Taker Routes
+  {
+    path: '/s/:token',
+    element: (
+      <SurveyPlayerPage
+        projectId="PRJ-99201"
+        campaignId="CMP-101"
+        surveyId="SRV-5001"
+        responseToken="DEMO-TOKEN-123"
+        respondentType="AUTHENTICATED"
+        survey={DEFAULT_DEMO_SURVEY}
+      />
+    ),
+  },
+  {
+    path: '/kiosk/:surveyId',
+    element: (
+      <KioskPlayerPage
+        projectId="PRJ-99201"
+        campaignId="CMP-101"
+        surveyId="SRV-5001"
+        survey={DEFAULT_DEMO_SURVEY}
+      />
+    ),
+  },
+
+  // Auth Routes
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+    ],
+  },
+
+  // Authenticated Platform Routes
+  {
+    element: (
+      <ProtectedRoute>
+        <MainPlatformLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { path: '/', element: <Navigate to="/dashboard" replace /> },
+      { path: '/dashboard', element: <ExecutiveDashboardPage /> },
+      { path: '/access-denied', element: <AccessDeniedPage /> },
+
+      { path: '/settings/projects', element: <RoleGate allowedRoles={['SUPER_ADMIN']}><ProjectSetupWizard onSuccess={() => {}} /></RoleGate> },
+      { path: '/settings/branding', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><ThemeCustomizerView /></RoleGate> },
+      { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagMatrixView /></RoleGate> },
+      { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementView /></RoleGate> },
+
+      { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyView /></RoleGate> },
+      { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterView /></RoleGate> },
+
+      { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderView /></RoleGate> },
+      { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionView /></RoleGate> },
+
+      { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsView /></RoleGate> },
+      { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsView /></RoleGate></FeatureGate> },
+
+      { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportsView /></RoleGate> },
+      { path: '/action-plans', element: <FeatureGate flag="actionPlanningEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}><ActionKanbanBoardPage /></RoleGate></FeatureGate> },
+
+      { path: '/notifications', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Notification Delivery Logs" subtitle="Inspect Kafka email and SMS dispatch delivery statuses" icon="🔔" /></RoleGate> },
+      { path: '/audit', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Immutable System Audit Trail" subtitle="Write-once audit log inspector with correlation ID tracking" icon="🛡️" /></RoleGate> },
+    ],
+  },
+]);
