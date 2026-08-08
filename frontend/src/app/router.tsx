@@ -32,8 +32,10 @@ import { DistributionStudioPage } from '../features/distribution/pages/Distribut
 // FEAT-007 Analytics Engine Domain Pages
 import { AnalyticsDashboardPage } from '../features/analytics/pages/AnalyticsDashboardPage';
 
+// FEAT-008 AI Analytics Domain Pages
+import { AiAnalyticsPage } from '../features/ai-analytics/pages/AiAnalyticsPage';
+
 // Domain Component Wrappers
-import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
 import { ReportExportModal } from '../components/reporting/ReportExportModal';
 import { ActionKanbanBoardPage } from '../pages/ActionKanbanBoardPage';
 import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
@@ -57,15 +59,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const AiAnalyticsView: React.FC = () => {
-  return (
-    <div>
-      <PageHeader title="AI Analytics & Sentiment Studio" subtitle="NLP sentiment extraction, topic modeling, and LLM executive summaries" />
-      <SentimentAnalyticsPanel />
-    </div>
-  );
-};
 
 const ReportsView: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(true);
@@ -166,7 +159,8 @@ export const router = createBrowserRouter([
       // FEAT-007 Analytics Engine Domain Routes
       { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsDashboardPage /></RoleGate> },
 
-      { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsView /></RoleGate></FeatureGate> },
+      // FEAT-008 AI Analytics Domain Routes
+      { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsPage /></RoleGate></FeatureGate> },
 
       { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportsView /></RoleGate> },
       { path: '/action-plans', element: <FeatureGate flag="actionPlanningEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}><ActionKanbanBoardPage /></RoleGate></FeatureGate> },
