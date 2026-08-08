@@ -11,11 +11,13 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { AccessDeniedPage } from '../pages/auth/AccessDeniedPage';
 import { ExecutiveDashboardPage } from '../pages/dashboard/ExecutiveDashboardPage';
 
+// FEAT-001 Project Config Domain Pages
+import { ProjectProvisioningPage } from '../features/project-config/pages/ProjectProvisioningPage';
+import { ThemeBrandingPage } from '../features/project-config/pages/ThemeBrandingPage';
+import { FeatureFlagPage } from '../features/project-config/pages/FeatureFlagPage';
+import { LocaleManagementPage } from '../features/project-config/pages/LocaleManagementPage';
+
 // Domain Component Wrappers
-import { ProjectSetupWizard } from '../components/project-config/ProjectSetupWizard';
-import { ThemeCustomizer } from '../components/project-config/ThemeCustomizer';
-import { FeatureFlagMatrix } from '../components/project-config/FeatureFlagMatrix';
-import { LocaleManagementPanel } from '../components/project-config/LocaleManagementPanel';
 import { OrgHierarchyManager } from '../components/hierarchy/OrgHierarchyManager';
 import { EmployeeDataGrid } from '../components/employee/EmployeeDataGrid';
 import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
@@ -45,50 +47,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const FeatureFlagMatrixView: React.FC = () => {
-  const { activeProject, featureFlags, updateFeatureFlags } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Feature Flag Matrix" subtitle="Dynamic tenant feature toggle management" />
-      <FeatureFlagMatrix
-        projectId={activeProject?.projectId || 'PRJ-99201'}
-        initialFeatures={featureFlags}
-        onUpdate={(updated) => updateFeatureFlags(updated)}
-      />
-    </div>
-  );
-};
-
-const ThemeCustomizerView: React.FC = () => {
-  const { branding, updateBranding } = useTenant();
-  return (
-    <div>
-      <PageHeader title="White-Label Brand & Accessibility Studio" subtitle="Real-time WCAG 2.1 contrast accessibility feedback" />
-      <ThemeCustomizer branding={branding} onChange={(b) => updateBranding(b)} />
-    </div>
-  );
-};
-
-const LocaleManagementView: React.FC = () => {
-  const { activeProject } = useTenant();
-  const [locales, setLocales] = React.useState<string[]>(activeProject?.supportedLocales || ['en-US', 'si-LK', 'ta-LK']);
-  const [def, setDef] = React.useState<string>(activeProject?.defaultLocale || 'en-US');
-
-  return (
-    <div>
-      <PageHeader title="Locales & Multilingual Management" subtitle="Manage translation packs and primary survey language" />
-      <LocaleManagementPanel
-        supportedLocales={locales}
-        defaultLocale={def}
-        onChange={(locs, d) => {
-          setLocales(locs);
-          setDef(d);
-        }}
-      />
-    </div>
-  );
-};
 
 const OrgHierarchyView: React.FC = () => {
   const { activeProject } = useTenant();
@@ -253,10 +211,11 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <ExecutiveDashboardPage /> },
       { path: '/access-denied', element: <AccessDeniedPage /> },
 
-      { path: '/settings/projects', element: <RoleGate allowedRoles={['SUPER_ADMIN']}><ProjectSetupWizard onSuccess={() => {}} /></RoleGate> },
-      { path: '/settings/branding', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><ThemeCustomizerView /></RoleGate> },
-      { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagMatrixView /></RoleGate> },
-      { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementView /></RoleGate> },
+      // FEAT-001 Project Config Domain Routes
+      { path: '/settings/projects', element: <RoleGate allowedRoles={['SUPER_ADMIN']}><ProjectProvisioningPage /></RoleGate> },
+      { path: '/settings/branding', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><ThemeBrandingPage /></RoleGate> },
+      { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagPage /></RoleGate> },
+      { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementPage /></RoleGate> },
 
       { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyView /></RoleGate> },
       { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterView /></RoleGate> },
