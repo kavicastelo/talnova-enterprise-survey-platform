@@ -20,8 +20,10 @@ import { LocaleManagementPage } from '../features/project-config/pages/LocaleMan
 // FEAT-002 Organization Hierarchy Domain Pages
 import { OrgHierarchyPage } from '../features/organization/pages/OrgHierarchyPage';
 
+// FEAT-003 Employee Management Domain Pages
+import { EmployeeRosterPage } from '../features/employee/pages/EmployeeRosterPage';
+
 // Domain Component Wrappers
-import { EmployeeDataGrid } from '../components/employee/EmployeeDataGrid';
 import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
 import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
 import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
@@ -49,21 +51,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const EmployeeRosterView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Employee Roster Studio" subtitle="Manage employee profiles, matrix reporting, and CSV imports" />
-      <EmployeeDataGrid
-        employees={[
-          { id: '1', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10020', fullName: 'Alexander Aitken', email: 'a.aitken@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: ['N-301'], status: 'ACTIVE', attributes: { TenureYears: 4, Gender: 'Male', Department: 'Engineering' } },
-          { id: '2', projectId: activeProject?.projectId || 'PRJ-99201', employeeId: 'EMP-10021', fullName: 'Jane Cooper', email: 'j.cooper@aitkenspence.lk', nodeId: 'N-201', matrixNodeIds: [], status: 'ACTIVE', attributes: { TenureYears: 6, Gender: 'Female', Department: 'Engineering' } },
-        ]}
-      />
-    </div>
-  );
-};
 
 const SurveyBuilderView: React.FC = () => {
   const { activeProject } = useTenant();
@@ -211,7 +198,9 @@ export const router = createBrowserRouter([
 
       // FEAT-002 Organization Hierarchy Domain Routes
       { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyPage /></RoleGate> },
-      { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterView /></RoleGate> },
+
+      // FEAT-003 Employee Management Domain Routes
+      { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterPage /></RoleGate> },
 
       { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderView /></RoleGate> },
       { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionView /></RoleGate> },

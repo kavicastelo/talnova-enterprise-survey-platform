@@ -1,24 +1,48 @@
 import React, { useState, useMemo } from 'react';
-import { EmployeeProfile, EmployeeStatus } from '../../types/employee';
+import { EmployeeResponse } from '../../types/employee';
+import { useGdprAnonymizeMutation } from '../../features/employee/api/useEmployeeQueries';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { DataTable } from '../ui/DataTable';
+import { SearchFilterBar } from '../ui/SearchFilterBar';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { Select } from '../ui/Select';
 
 interface EmployeeDataGridProps {
-  employees: EmployeeProfile[];
-  onSelectEmployee?: (employee: EmployeeProfile) => void;
-  onUpdateStatus?: (employeeId: string, status: EmployeeStatus) => void;
+  employees: EmployeeResponse[];
+  projectId?: string;
+  onSelectEmployee?: (employee: EmployeeResponse) => void;
   onOpenImportWizard?: () => void;
+  onOpenCreateModal?: () => void;
 }
 
 export const EmployeeDataGrid: React.FC<EmployeeDataGridProps> = ({
   employees,
+  projectId = 'PRJ-99201',
   onSelectEmployee,
-  onUpdateStatus,
-  onOpenImportWizard
+  onOpenImportWizard,
+  onOpenCreateModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [employeeToAnonymize, setEmployeeToAnonymize] = useState<string | null>(null);
+
+  const anonymizeMutation = useGdprAnonymizeMutation();
+
+  const handleConfirmGdprAnonymize = () => {
+    if (employeeToAnonymize) {
+      anonymizeMutation.mutate(
+        { employeeId: employeeToAnonymize, projectId },
+        {
+          onSuccess: () => setEmployeeToAnonymize(null),
+        }
+      );
+    }
+  };
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter(emp => {
+    return employees.filter((emp) => {
       const matchesSearch =
         !searchQuery ||
         emp.employeeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,208 +50,146 @@ export const EmployeeDataGrid: React.FC<EmployeeDataGridProps> = ({
         emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         emp.nodeId?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === 'ALL' || emp.status === statusFilter;
+      const matchesStatus = statusFilter === 'ALL' || emp.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
   }, [employees, searchQuery, statusFilter]);
 
-  const dynamicAttributeKeys = useMemo(() => {
-    const keys = new Set<string>();
-    employees.forEach(emp => {
-      if (emp.attributes) {
-        Object.keys(emp.attributes).forEach(k => keys.add(k));
-      }
-    });
-    return Array.from(keys);
-  }, [employees]);
-
-  const renderStatusDropdown = (emp: EmployeeProfile) => {
-    return (
-      <select
-        value={emp.status}
-        onChange={e => onUpdateStatus && onUpdateStatus(emp.employeeId, e.target.value as EmployeeStatus)}
-        disabled={!onUpdateStatus}
-        style={{
-          padding: '4px 8px',
-          borderRadius: '12px',
-          background:
-            emp.status === 'ACTIVE'
-              ? 'rgba(16, 185, 129, 0.2)'
-              : emp.status === 'INACTIVE'
-              ? 'rgba(245, 158, 11, 0.2)'
-              : 'rgba(239, 68, 68, 0.2)',
-          color:
-            emp.status === 'ACTIVE'
-              ? '#10b981'
-              : emp.status === 'INACTIVE'
-              ? '#f59e0b'
-              : '#ef4444',
-          fontWeight: 600,
-          fontSize: '0.75rem',
-          border: 'none',
-          outline: 'none',
-          cursor: onUpdateStatus ? 'pointer' : 'default'
-        }}
-      >
-        <option value="ACTIVE" style={{ background: '#0f172a', color: '#10b981' }}>ACTIVE</option>
-        <option value="INACTIVE" style={{ background: '#0f172a', color: '#f59e0b' }}>INACTIVE</option>
-        <option value="TERMINATED" style={{ background: '#0f172a', color: '#ef4444' }}>TERMINATED</option>
-      </select>
-    );
-  };
+  const columns = [
+    {
+      key: 'employeeId',
+      header: 'Employee ID',
+      render: (row: EmployeeResponse) => <code style={{ fontWeight: 700, color: '#1d4ed8' }}>{row.employeeId}</code>,
+    },
+    {
+      key: 'fullName',
+      header: 'Full Legal Name',
+      render: (row: EmployeeResponse) => {
+        const isMasked = row.fullName.includes('*');
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>{row.fullName}</span>
+            {isMasked && <Badge variant="warning">PII Masked</Badge>}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'email',
+      header: 'Email Address',
+      render: (row: EmployeeResponse) => <span style={{ color: '#475569' }}>{row.email || '—'}</span>,
+    },
+    {
+      key: 'nodeId',
+      header: 'Primary Org Node',
+      render: (row: EmployeeResponse) => (
+        <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem' }}>
+          {row.nodeId}
+        </code>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row: EmployeeResponse) => (
+        <Badge
+          variant={row.status === 'ACTIVE' ? 'success' : row.status === 'INACTIVE' ? 'warning' : 'danger'}
+          dot
+        >
+          {row.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (row: EmployeeResponse) => (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {onSelectEmployee && (
+            <Button variant="outline" size="sm" onClick={() => onSelectEmployee(row)}>
+              Edit Profile
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setEmployeeToAnonymize(row.employeeId)}
+          >
+            GDPR Anonymize
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px', background: '#0f172a', color: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-      {/* Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Enterprise Employee Roster
-          </h2>
-          <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-            Total Roster: {employees.length} | Filtered: {filteredEmployees.length} Records
-          </span>
+    <Card variant="bordered" padding="24px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Header Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+              Enterprise Employee Roster Studio
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+              Manage profiles, CSFLE PII encryption, matrix node reporting, and GDPR Right-to-be-Forgotten compliance.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {onOpenImportWizard && (
+              <Button variant="secondary" onClick={onOpenImportWizard}>
+                📥 Import CSV Roster
+              </Button>
+            )}
+            {onOpenCreateModal && (
+              <Button variant="primary" onClick={onOpenCreateModal}>
+                + Add Employee Profile
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {onOpenImportWizard && (
-            <button
-              onClick={onOpenImportWizard}
-              style={{
-                padding: '8px 16px',
-                background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-              }}
-            >
-              📥 Import CSV Roster
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Filter & Search Bar */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <input
-          type="text"
-          placeholder="Search by Employee ID, Name, Email, or Node..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '10px 14px',
-            background: '#1e293b',
-            border: '1px solid #334155',
-            borderRadius: '8px',
-            color: '#f8fafc',
-            outline: 'none',
-            fontSize: '0.9rem'
-          }}
+        {/* Filter & Search Bar */}
+        <SearchFilterBar
+          placeholder="Search by Employee ID, Name, Email, or Org Node..."
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          filters={
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'ACTIVE', label: 'Active Only' },
+                { value: 'INACTIVE', label: 'Inactive Only' },
+                { value: 'TERMINATED', label: 'Terminated Only' },
+              ]}
+            />
+          }
         />
 
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          style={{
-            padding: '10px 14px',
-            background: '#1e293b',
-            border: '1px solid #334155',
-            borderRadius: '8px',
-            color: '#f8fafc',
-            outline: 'none',
-            fontSize: '0.9rem'
-          }}
-        >
-          <option value="ALL">All Statuses</option>
-          <option value="ACTIVE">Active Only</option>
-          <option value="INACTIVE">Inactive Only</option>
-          <option value="TERMINATED">Terminated Only</option>
-        </select>
+        {/* Roster Data Table */}
+        <DataTable
+          columns={columns}
+          data={filteredEmployees}
+          keyExtractor={(row) => row.employeeId}
+          emptyTitle="No Employee Profiles Found"
+          emptyDescription="There are no employee profiles matching your filter criteria."
+        />
       </div>
 
-      {/* Data Grid Table */}
-      <div style={{ flex: 1, overflow: 'auto', border: '1px solid #334155', borderRadius: '8px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-          <thead>
-            <tr style={{ background: '#1e293b', color: '#cbd5e1', position: 'sticky', top: 0, zIndex: 10 }}>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Employee ID</th>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Full Name</th>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Email Address</th>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Org Node</th>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Matrix Nodes</th>
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Status</th>
-              {dynamicAttributeKeys.map(attrKey => (
-                <th key={attrKey} style={{ padding: '12px 16px', borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                  {attrKey}
-                </th>
-              ))}
-              <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.length === 0 ? (
-              <tr>
-                <td colSpan={7 + dynamicAttributeKeys.length} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
-                  No employee profiles match the specified filters.
-                </td>
-              </tr>
-            ) : (
-              filteredEmployees.map((emp, idx) => (
-                <tr
-                  key={emp.id || emp.employeeId}
-                  style={{
-                    background: idx % 2 === 0 ? '#0f172a' : '#172554',
-                    borderBottom: '1px solid #1e293b',
-                    transition: 'background 0.2s ease'
-                  }}
-                >
-                  <td style={{ padding: '12px 16px', fontWeight: 600, color: '#38bdf8' }}>{emp.employeeId}</td>
-                  <td style={{ padding: '12px 16px', fontWeight: 500 }}>{emp.fullName || '—'}</td>
-                  <td style={{ padding: '12px 16px', color: '#cbd5e1' }}>{emp.email || '—'}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{ padding: '2px 6px', background: '#334155', borderRadius: '4px', fontSize: '0.8rem', fontFamily: 'monospace' }}>
-                      {emp.nodeId}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 16px', color: '#94a3b8' }}>
-                    {emp.matrixNodeIds && emp.matrixNodeIds.length > 0 ? emp.matrixNodeIds.join(', ') : '—'}
-                  </td>
-                  <td style={{ padding: '12px 16px' }}>{renderStatusDropdown(emp)}</td>
-                  {dynamicAttributeKeys.map(attrKey => (
-                    <td key={attrKey} style={{ padding: '12px 16px', color: '#94a3b8' }}>
-                      {emp.attributes && emp.attributes[attrKey] !== undefined ? String(emp.attributes[attrKey]) : '—'}
-                    </td>
-                  ))}
-                  <td style={{ padding: '12px 16px' }}>
-                    {onSelectEmployee && (
-                      <button
-                        onClick={() => onSelectEmployee(emp)}
-                        style={{
-                          padding: '4px 10px',
-                          background: 'transparent',
-                          border: '1px solid #38bdf8',
-                          color: '#38bdf8',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      {/* GDPR Anonymize Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!employeeToAnonymize}
+        onClose={() => setEmployeeToAnonymize(null)}
+        onConfirm={handleConfirmGdprAnonymize}
+        title="GDPR Right-to-be-Forgotten Anonymization"
+        message={`Are you sure you want to scramble PII for employee ${employeeToAnonymize}? Sensitive PII (Name, Email, Phone) will be overwritten with scramble hashes and profile flagged as soft-deleted.`}
+        confirmText="Confirm PII Anonymization"
+        isLoading={anonymizeMutation.isPending}
+      />
+    </Card>
   );
 };

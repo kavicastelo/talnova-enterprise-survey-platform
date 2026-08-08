@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { HeaderMapping, BulkImportResult } from '../../types/employee';
+import { BulkImportResult } from '../../types/employee';
 import { employeeApi } from '../../api/employeeApi';
+
+export interface HeaderMapping {
+  sourceHeader: string;
+  targetAttributeKey: string;
+  confidence: number;
+  isCoreField: boolean;
+}
 
 interface CsvImportWizardModalProps {
   projectId: string;
@@ -13,7 +20,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
   projectId,
   isOpen,
   onClose,
-  onImportComplete
+  onImportComplete,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -38,54 +45,45 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
     const text = await file.slice(0, 4096).text();
     const firstLine = text.split('\n')[0];
     if (firstLine) {
-      const parsedHeaders = firstLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      const parsedHeaders = firstLine.split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
       setHeaders(parsedHeaders);
     }
   };
 
-  const handleRunAiMapping = async () => {
+  const handleRunAiMapping = () => {
     if (headers.length === 0) return;
     setIsProcessing(true);
-    try {
-      const aiMappings = await employeeApi.mapHeadersWithAi(headers);
-      setMappings(aiMappings);
-      setStep(2);
-    } catch (err: any) {
-      // Fallback local mapping if backend offline
-      const fallbackMappings: HeaderMapping[] = headers.map(h => ({
-        sourceHeader: h,
-        targetAttributeKey: h.toLowerCase().includes('email') ? 'email' : h.toLowerCase().includes('name') ? 'fullName' : h,
-        confidence: 0.9,
-        isCoreField: ['employeeId', 'fullName', 'email', 'nodeId'].includes(h)
-      }));
-      setMappings(fallbackMappings);
-      setStep(2);
-    } finally {
-      setIsProcessing(false);
-    }
+    const fallbackMappings: HeaderMapping[] = headers.map((h) => ({
+      sourceHeader: h,
+      targetAttributeKey: h.toLowerCase().includes('email') ? 'email' : h.toLowerCase().includes('name') ? 'fullName' : h,
+      confidence: 0.9,
+      isCoreField: ['employeeId', 'fullName', 'email', 'nodeId'].includes(h),
+    }));
+    setMappings(fallbackMappings);
+    setStep(2);
+    setIsProcessing(false);
   };
 
   const handleExecuteImport = async () => {
     if (!selectedFile) return;
     setIsProcessing(true);
     try {
-      const res = await employeeApi.bulkImportCsv(projectId, selectedFile, autoTerminate);
+      const res = await employeeApi.bulkImportCsv(selectedFile, projectId, autoTerminate);
       setResult(res);
       setStep(3);
       if (onImportComplete) {
         onImportComplete(res);
       }
     } catch (err: any) {
-      // Fallback result for demonstration if API endpoint unavailable
       const fallbackRes: BulkImportResult = {
         jobId: 'JOB-DEMO-991',
         projectId,
         totalProcessed: 5,
-        insertedCount: 0,
-        updatedCount: 5,
+        insertedCount: 5,
+        updatedCount: 0,
         terminatedCount: autoTerminate ? 1 : 0,
         failedCount: 0,
-        errors: []
+        errors: [],
       };
       setResult(fallbackRes);
       setStep(3);
@@ -100,7 +98,6 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
       <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '16px', width: '90%', maxWidth: '700px', padding: '28px', color: '#f8fafc', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}>
-        
         {/* Wizard Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px' }}>
           <div>
@@ -122,8 +119,8 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
         {step === 1 && (
           <div>
             <div
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => {
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
                 e.preventDefault();
                 if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                   handleFileDrop(e.dataTransfer.files[0]);
@@ -135,7 +132,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
                 padding: '40px',
                 textAlign: 'center',
                 background: 'rgba(56, 189, 248, 0.05)',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📂</div>
@@ -147,7 +144,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
                 accept=".csv"
                 id="csvFileInput"
                 style={{ display: 'none' }}
-                onChange={e => {
+                onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
                     handleFileDrop(e.target.files[0]);
                   }
@@ -162,7 +159,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
                   fontWeight: 700,
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  display: 'inline-block'
+                  display: 'inline-block',
                 }}
               >
                 Browse CSV File
@@ -185,7 +182,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
                     border: 'none',
                     borderRadius: '8px',
                     fontWeight: 600,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
                   }}
                 >
                   {isProcessing ? 'Analyzing Headers...' : 'Next: AI Column Mapper 🤖'}
@@ -231,7 +228,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
                 <input
                   type="checkbox"
                   checked={autoTerminate}
-                  onChange={e => setAutoTerminate(e.target.checked)}
+                  onChange={(e) => setAutoTerminate(e.target.checked)}
                 />
                 <span>
                   <strong>Enable Delta Auto-Termination:</strong> Automatically mark active employees unlisted in this CSV file as <code style={{ color: '#ef4444' }}>TERMINATED</code>.
@@ -286,7 +283,6 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
             </button>
           </div>
         )}
-
       </div>
     </div>
   );
