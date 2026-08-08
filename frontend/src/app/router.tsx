@@ -35,14 +35,15 @@ import { AnalyticsDashboardPage } from '../features/analytics/pages/AnalyticsDas
 // FEAT-008 AI Analytics Domain Pages
 import { AiAnalyticsPage } from '../features/ai-analytics/pages/AiAnalyticsPage';
 
+// FEAT-009 Reporting Engine Domain Pages
+import { ReportingCenterPage } from '../features/reporting/pages/ReportingCenterPage';
+
 // Domain Component Wrappers
-import { ReportExportModal } from '../components/reporting/ReportExportModal';
 import { ActionKanbanBoardPage } from '../pages/ActionKanbanBoardPage';
 import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
 import { SurveyPlayerPage } from '../components/player/SurveyPlayerPage';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
-import { useTenant } from '../context/TenantContext';
 import { SurveyResponse } from '../types/survey';
 
 const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = ({ title, subtitle, icon }) => (
@@ -59,24 +60,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const ReportsView: React.FC = () => {
-  const [isOpen, setIsOpen] = React.useState(true);
-  const { activeProject } = useTenant();
-
-  return (
-    <div>
-      <PageHeader title="Report Job Generator" subtitle="Async PDF and Excel report generation with polling progress status" />
-      <ReportExportModal
-        projectId={activeProject?.projectId || 'PRJ-99201'}
-        campaignId="CMP-101"
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onJobSubmitted={(jobId) => alert(`Report export job queued with ID: ${jobId}`)}
-      />
-    </div>
-  );
-};
 
 const DEFAULT_DEMO_SURVEY: SurveyResponse = {
   id: 'SRV-5001',
@@ -162,7 +145,9 @@ export const router = createBrowserRouter([
       // FEAT-008 AI Analytics Domain Routes
       { path: '/ai-insights', element: <FeatureGate flag="aiAnalyticsEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH']}><AiAnalyticsPage /></RoleGate></FeatureGate> },
 
-      { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportsView /></RoleGate> },
+      // FEAT-009 Reporting Engine Domain Routes
+      { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportingCenterPage /></RoleGate> },
+
       { path: '/action-plans', element: <FeatureGate flag="actionPlanningEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}><ActionKanbanBoardPage /></RoleGate></FeatureGate> },
 
       { path: '/notifications', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Notification Delivery Logs" subtitle="Inspect Kafka email and SMS dispatch delivery statuses" icon="🔔" /></RoleGate> },
