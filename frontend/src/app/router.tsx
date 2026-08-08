@@ -38,8 +38,10 @@ import { AiAnalyticsPage } from '../features/ai-analytics/pages/AiAnalyticsPage'
 // FEAT-009 Reporting Engine Domain Pages
 import { ReportingCenterPage } from '../features/reporting/pages/ReportingCenterPage';
 
+// FEAT-010 Action Planning Domain Pages
+import { ActionKanbanBoardPage } from '../features/action-planning/pages/ActionKanbanBoardPage';
+
 // Domain Component Wrappers
-import { ActionKanbanBoardPage } from '../pages/ActionKanbanBoardPage';
 import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
 import { SurveyPlayerPage } from '../components/player/SurveyPlayerPage';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -148,6 +150,7 @@ export const router = createBrowserRouter([
       // FEAT-009 Reporting Engine Domain Routes
       { path: '/reports', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><ReportingCenterPage /></RoleGate> },
 
+      // FEAT-010 Action Planning Domain Routes
       { path: '/action-plans', element: <FeatureGate flag="actionPlanningEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}><ActionKanbanBoardPage /></RoleGate></FeatureGate> },
 
       { path: '/notifications', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Notification Delivery Logs" subtitle="Inspect Kafka email and SMS dispatch delivery statuses" icon="🔔" /></RoleGate> },
