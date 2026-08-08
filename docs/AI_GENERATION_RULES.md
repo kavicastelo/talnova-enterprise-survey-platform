@@ -1,195 +1,1629 @@
 # AI_GENERATION_RULES.md
 
-# AI Code Generation Rules
+# Talnova Enterprise Survey Platform — Frontend AI Generation Rules
 
-This repository is generated with AI assistance.
+## 1. Purpose
 
-Quality is more important than speed.
+This document defines the rules that AI coding agents MUST follow when generating, modifying, refactoring, or reviewing the TESP frontend.
+
+These rules exist to prevent common AI-generated frontend failures:
+
+* Fake APIs
+* Hardcoded backend behavior
+* Mock data accidentally reaching production
+* Incorrect tenant handling
+* Incorrect RBAC
+* Duplicated components
+* Over-engineered abstractions
+* Poor UI organization
+* Broken asynchronous workflows
+* Incorrect assumptions about backend state
+* Security-sensitive data leakage
+* Backend/frontend contract drift
 
 ---
 
-## Rule 1
+# 2. Primary Rule
 
-Never generate placeholder code.
+## Never generate frontend behavior that the backend does not support.
+
+The backend is the source of truth for:
+
+* API availability
+* Request contracts
+* Response contracts
+* Validation
+* Authorization
+* State transitions
+* Tenant isolation
+* Workflow rules
+* Feature flags
+* Data availability
+
+If the backend contract cannot be verified, do not invent it.
+
+---
+
+# 3. Source-of-Truth Hierarchy
+
+When generating code, use this priority:
+
+```text
+1. Actual backend implementation
+2. Actual API DTOs / Controllers
+3. Existing frontend API contracts
+4. Approved architecture documentation
+5. Approved feature requirements
+6. Existing frontend patterns
+7. General engineering assumptions
+```
+
+Never reverse this order.
+
+If architecture documentation says one thing but the actual backend implementation exposes another contract, stop and identify the discrepancy rather than silently guessing.
+
+---
+
+# 4. Mandatory Repository Inspection
+
+Before generating code, inspect:
+
+```text
+package.json
+vite.config.*
+tsconfig.*
+src/
+routing
+API layer
+authentication
+tenant handling
+existing components
+existing hooks
+existing types
+existing styles
+environment configuration
+```
+
+For backend-dependent work, inspect the corresponding backend service.
+
+Do not generate a feature from a prompt alone when repository context is available.
+
+---
+
+# 5. Feature-to-Service Mapping
+
+Use this mapping:
+
+```text
+Project Config
+→ project-config-service :8081
+
+Organization
+→ organization-service :8082
+
+Employees
+→ employee-service :8083
+
+Survey Builder
+→ survey-builder-service :8084
+
+Distribution
+→ survey-distribution-service :8085
+
+Response Intake
+→ response-ingestion-service :8086
+
+Analytics
+→ analytics-engine-service :8087
+
+AI Analytics
+→ ai-analytics-service :8088
+
+Reporting
+→ reporting-service :8089
+
+Action Planning
+→ action-planning-service :8090
+
+Notifications
+→ notification-service :8091
+
+Audit
+→ audit-service :8092
+```
+
+The browser accesses these through the API Gateway.
+
+---
+
+# 6. Never Bypass the Gateway
+
+Generated frontend code MUST NOT contain direct service URLs.
 
 Forbidden:
 
-TODO
+```ts
+fetch("http://localhost:8083/api/v1/employees");
+```
 
-FIXME
+Forbidden:
 
-Dummy implementation
+```ts
+const EMPLOYEE_SERVICE =
+  "http://employee-service:8083";
+```
 
-Mock return values
+Required pattern:
 
-Empty methods
+```ts
+apiClient.get("/api/v1/employees");
+```
 
----
-
-## Rule 2
-
-Every generated class must compile.
-
----
-
-## Rule 3
-
-Never create duplicate classes.
-
-Search first.
-
-Reuse existing implementations.
+The API Gateway is the public backend boundary.
 
 ---
 
-## Rule 4
+# 7. Never Invent Endpoints
 
-Follow project package structure exactly.
+Before writing:
 
-Never invent packages.
+```ts
+api.get(...)
+api.post(...)
+api.put(...)
+api.patch(...)
+api.delete(...)
+```
 
----
+verify the corresponding backend controller.
 
-## Rule 5
+Confirm:
 
-Always generate:
+```text
+HTTP method
+Path
+Path parameters
+Query parameters
+Headers
+Request body
+Response body
+Status codes
+Authorization
+Tenant requirements
+```
 
-JavaDocs
-
-Validation
-
-Logging
-
-Exception handling
-
-Meaningful variable names
-
----
-
-## Rule 6
-
-Every REST endpoint requires
-
-OpenAPI annotations
-
-Validation
-
-Security
-
-Response DTO
-
-Error responses
+If any are unknown, inspect the backend.
 
 ---
 
-## Rule 7
+# 8. Never Invent Response Fields
 
-Every Service requires
+Forbidden:
 
-Interface
+```ts
+response.data.totalEmployees
+```
 
-Implementation
+unless the backend actually returns:
 
-Transactional behavior
+```json
+{
+  "totalEmployees": 123
+}
+```
 
-Logging
+Do not infer fields from naming conventions.
 
+Do not invent:
+
+```text
+id
+createdAt
+updatedAt
+status
+name
+count
+total
+message
+```
+
+Verify them.
+
+---
+
+# 9. Never Invent State Transitions
+
+For workflow-driven systems:
+
+```text
+Survey
+Campaign
+Report
+Action Plan
+Notification
+```
+
+the backend owns valid state transitions.
+
+Do not generate:
+
+```ts
+setStatus("APPROVED");
+```
+
+unless that is a local UI-only state.
+
+Server state must come from the backend.
+
+---
+
+# 10. Async Operation Rule
+
+If an endpoint returns:
+
+```text
+202 Accepted
+```
+
+or creates an asynchronous job, do not model the operation as synchronous.
+
+Correct:
+
+```text
+Request
+ ↓
+Accepted
+ ↓
+Job ID
+ ↓
+Status
+ ↓
+Completed
+```
+
+Incorrect:
+
+```text
+await generateReport();
+showDownload();
+```
+
+unless the backend actually returns the completed report synchronously.
+
+---
+
+# 11. Loading State Rule
+
+Every network operation generated by AI must have an intentional loading state.
+
+Minimum states:
+
+```text
+idle
+loading
+success
+error
+```
+
+For long-running workflows, use:
+
+```text
+queued
+processing
+completed
+failed
+```
+
+when supported by the API.
+
+---
+
+# 12. Error State Rule
+
+Every API-driven screen must consider:
+
+```text
+Loading
+Success
+Empty
+Error
+```
+
+Do not generate only the happy path.
+
+For destructive or important actions also consider:
+
+```text
+Confirmation
+Submitting
+Success feedback
+Failure feedback
+```
+
+---
+
+# 13. Tenant Context Rule
+
+Every project-scoped operation must preserve:
+
+```text
+projectId
+```
+
+Do not allow feature components to arbitrarily choose a tenant.
+
+Use the centralized project/tenant context.
+
+Never trust:
+
+```ts
+projectId
+```
+
+from route parameters or arbitrary form state without validating it against active project context and backend authorization.
+
+---
+
+# 14. Cross-Tenant Safety Rule
+
+Never create frontend behavior that allows:
+
+```text
+Project A
+   ↓
+Project B employee data
+```
+
+unless the user explicitly has a backend-authorized cross-project role such as:
+
+```text
+SUPER_ADMIN
+```
+
+Even then, the frontend must use supported backend APIs.
+
+---
+
+# 15. Authentication Rule
+
+Never implement authentication using fake frontend-only authorization.
+
+Forbidden:
+
+```ts
+if (localStorage.getItem("isAdmin")) {
+   showAdminPanel();
+}
+```
+
+Authentication must come from the real authentication mechanism.
+
+The frontend may hide unauthorized UI.
+
+The backend remains authoritative.
+
+---
+
+# 16. Authorization Rule
+
+Use permissions/capabilities whenever possible.
+
+Prefer:
+
+```ts
+can("employee.create")
+```
+
+over:
+
+```ts
+user.role === "HR_MANAGER"
+```
+
+unless the business requirement explicitly depends on role identity.
+
+Never assume that a role grants permissions without verifying the actual permission model.
+
+---
+
+# 17. Security Rule
+
+Never expose:
+
+* Secrets
+* API keys
+* Private service URLs
+* Database credentials
+* Encryption keys
+* AI provider credentials
+* AWS credentials
+* MongoDB credentials
+
+in frontend code.
+
+Anything shipped to the browser must be considered public.
+
+---
+
+# 18. PII Rule
+
+Employee PII is sensitive.
+
+Do not unnecessarily display:
+
+* Full employee details
+* Sensitive demographic attributes
+* Personal identifiers
+* Raw survey responses
+* AI input content
+
+Only display information required for the user's authorized workflow.
+
+Never log sensitive employee information to:
+
+```text
+console.log()
+```
+
+---
+
+# 19. AI Analytics Rule
+
+The frontend must consume sanitized AI analytics from the backend.
+
+Never send raw employee PII directly from the browser to:
+
+```text
+OpenAI
+Gemini
+other AI providers
+```
+
+unless an explicitly approved architecture requires it.
+
+The AI analytics service owns external AI integration.
+
+---
+
+# 20. Analytics Privacy Rule
+
+TESP enforces anonymity suppression for:
+
+```text
+N < 5
+```
+
+Never attempt to bypass this.
+
+Do not derive suppressed data by combining:
+
+* charts
+* filters
+* exports
+* totals
+* individual records
+
+to infer the underlying population.
+
+---
+
+# 21. Survey Builder Rule
+
+Never create an ad-hoc survey data model.
+
+Use the backend survey schema.
+
+Before implementing a survey builder feature, inspect:
+
+```text
+Survey DTO
+Question DTO
+Section DTO
+Branching model
+Validation model
+Version model
+Publish API
+```
+
+The frontend must serialize data according to the backend contract.
+
+---
+
+# 22. Published Survey Rule
+
+A published survey version is immutable.
+
+Do not generate edit controls that mutate a published version.
+
+Correct behavior:
+
+```text
+Published Version
+      ↓
+Read-only
+      ↓
+Create New Version
+```
+
+if version creation is supported by the backend.
+
+---
+
+# 23. Distribution Rule
+
+Never assume:
+
+```text
+campaign created
+=
+campaign delivered
+```
+
+Represent asynchronous delivery accurately.
+
+Do not display:
+
+```text
+Successfully sent to 5,000 employees
+```
+
+unless the backend actually confirms delivery.
+
+---
+
+# 24. Token Rule
+
+Survey distribution and response intake use single-use tokens.
+
+Do not:
+
+* expose token internals unnecessarily
+* store sensitive tokens in global application state
+* print tokens to logs
+* transform tokens unnecessarily
+* attempt client-side token invalidation
+
+Token lifecycle belongs to the backend.
+
+---
+
+# 25. Response Intake Rule
+
+Public response pages must remain independent from administrative application assumptions.
+
+Do not require:
+
+```text
+Admin JWT
+Project admin permissions
+Dashboard shell
+```
+
+for anonymous/tokenized survey response flows unless the backend contract explicitly requires them.
+
+---
+
+# 26. Reporting Rule
+
+Report generation is asynchronous.
+
+Never block the browser waiting for:
+
+```text
+PDF
+XLSX
+large report
+```
+
+Use job-based workflows when supported.
+
+Do not download huge files into JavaScript memory unnecessarily.
+
+Prefer browser-native download mechanisms or backend-provided URLs.
+
+---
+
+# 27. Action Planning Rule
+
+Action plans use backend-controlled workflow state.
+
+The frontend may display:
+
+```text
+Available Actions
+```
+
+but must not invent transitions.
+
+Example:
+
+```text
+OPEN
+ ↓
+IN_PROGRESS
+ ↓
+COMPLETED
+```
+
+must come from the backend contract.
+
+---
+
+# 28. Audit Rule
+
+Audit records are append-only.
+
+The frontend must never expose:
+
+```text
+Edit Audit
+Delete Audit
+Update Audit
+```
+
+functionality.
+
+If an audit log is displayed, it should be treated as read-only.
+
+---
+
+# 29. Notification Rule
+
+A successful notification API request means:
+
+```text
+accepted/queued
+```
+
+unless the backend explicitly states that delivery has completed.
+
+Do not show:
+
+```text
+Delivered
+```
+
+when the actual state is:
+
+```text
+Queued
+```
+
+---
+
+# 30. Mock Data Rule
+
+AI may generate mock data only when explicitly requested or when creating isolated UI fixtures.
+
+Mock data must be visibly isolated:
+
+```text
+src/mocks/
+src/fixtures/
+tests/fixtures/
+```
+
+Never silently replace a failed API call with mock data.
+
+Forbidden:
+
+```ts
+try {
+   return await api.get(...)
+} catch {
+   return mockEmployees;
+}
+```
+
+---
+
+# 31. No Fake Functionality
+
+Do not create buttons that do nothing.
+
+Forbidden:
+
+```tsx
+<Button>Export Report</Button>
+```
+
+with:
+
+```ts
+onClick={() => {}}
+```
+
+If functionality is not yet implemented, use an explicit disabled/placeholder state and document the missing backend or frontend dependency.
+
+---
+
+# 32. No Fake Success
+
+Never generate:
+
+```ts
+toast.success("Saved successfully");
+```
+
+before the backend confirms success.
+
+Correct:
+
+```text
+Submit
+ ↓
+API request
+ ↓
+Success response
+ ↓
+Success notification
+```
+
+---
+
+# 33. No Optimistic Updates Without Justification
+
+Do not optimistically modify important enterprise data unless:
+
+1. The operation is safe to reverse.
+2. Failure handling is implemented.
+3. The backend semantics support it.
+4. The UI can reconcile with authoritative server state.
+
+For critical workflows, prefer:
+
+```text
+Request
+ ↓
+Server
+ ↓
+Refresh authoritative state
+```
+
+---
+
+# 34. TypeScript Rule
+
+Generated production code must use TypeScript.
+
+Avoid:
+
+```ts
+any
+```
+
+Prefer explicit interfaces/types.
+
+If an API response is unknown:
+
+```ts
+unknown
+```
+
+should be used until validated.
+
+---
+
+# 35. Validation Rule
+
+Use client-side validation for UX.
+
+Do not assume client validation replaces backend validation.
+
+A valid client form can still receive:
+
+```text
+400
+409
+422
+403
+```
+
+and must handle those responses.
+
+---
+
+# 36. Component Size Rule
+
+AI-generated components should remain understandable.
+
+If a component begins combining:
+
+```text
+API calls
+State management
+Complex business logic
+Forms
+Tables
+Charts
+Dialogs
+Routing
+Permissions
+```
+
+split it.
+
+A page should orchestrate.
+
+Feature components should implement focused behavior.
+
+---
+
+# 37. Hook Rule
+
+Use hooks for reusable behavior.
+
+Examples:
+
+```text
+useEmployees()
+useEmployee()
+useCreateEmployee()
+useUpdateEmployee()
+useSurvey()
+useSurveyBuilder()
+useCampaign()
+useAnalytics()
+useReportJob()
+```
+
+Do not create hooks simply to wrap one trivial line unless it improves consistency.
+
+---
+
+# 38. API Client Rule
+
+API clients should contain transport logic.
+
+They should not contain UI behavior.
+
+Bad:
+
+```ts
+employeeApi.create()
+  → toast.success()
+  → navigate()
+  → openDialog()
+```
+
+Better:
+
+```ts
+employeeApi.create()
+```
+
+and let the feature layer decide:
+
+```text
+success → toast
+success → refresh
+success → navigation
+```
+
+---
+
+# 39. State Management Rule
+
+Do not introduce a global state library merely because the application is large.
+
+First determine whether the state is:
+
+```text
+Local UI state
+Form state
+Server state
+Session state
+Tenant state
+Global application state
+```
+
+Choose the smallest appropriate mechanism.
+
+---
+
+# 40. Duplication Rule
+
+Before creating a new abstraction, search for an existing one.
+
+AI frequently creates duplicate:
+
+```text
+Modal
+Dialog
+Table
+API client
+Date formatter
+Error handler
+Permission helper
+```
+
+Reuse existing infrastructure whenever possible.
+
+---
+
+# 41. UI Library Rule
+
+Use the existing:
+
+```text
+Tailwind CSS
+shadcn/ui
+```
+
+system.
+
+Do not introduce another component library without explicit approval.
+
+---
+
+# 42. Styling Rule
+
+Prefer:
+
+```text
+Tailwind utility classes
+existing design tokens
+existing component variants
+CSS modules/global CSS only where justified
+```
+
+Do not create arbitrary visual styles that conflict with the established design system.
+
+---
+
+# 43. Responsive Rule
+
+Every generated page must consider:
+
+```text
+Desktop
+Tablet
+Mobile
+```
+
+Do not solve responsive behavior only after the desktop version is complete.
+
+---
+
+# 44. Accessibility Rule
+
+Generated UI must include:
+
+* Labels
+* Keyboard navigation
+* Focus management
+* Semantic structure
+* Accessible dialogs
+* Accessible form errors
+* Accessible loading/status messages
+
+Do not rely exclusively on color to communicate state.
+
+---
+
+# 45. Table Generation Rule
+
+For enterprise tables, consider:
+
+```text
+Loading
+Empty
+Error
+Pagination
+Search
+Filter
+Sort
+Selection
+Bulk actions
+Responsive layout
+```
+
+Do not create enormous uncontrolled table components.
+
+---
+
+# 46. Dashboard Generation Rule
+
+Do not generate generic SaaS dashboards with:
+
+```text
+4 statistic cards
++
+2 random charts
++
+activity list
+```
+
+unless the actual product requirement calls for those elements.
+
+Every dashboard visualization must answer a real business question.
+
+Charts must use real backend metrics.
+
+Never fabricate metrics.
+
+---
+
+# 47. Chart Rule
+
+Never hardcode production chart values such as:
+
+```ts
+[42, 67, 81, 55]
+```
+
+unless those values are fixtures/tests.
+
+Production charts must consume API data.
+
+Handle:
+
+```text
+No data
+Suppressed data
+Loading
+Partial data
+API failure
+```
+
+---
+
+# 48. Empty State Rule
+
+An empty state must explain why the user is seeing nothing.
+
+Examples:
+
+```text
+No employees have been imported yet.
+```
+
+```text
+No surveys have been created for this project.
+```
+
+```text
+No report jobs match your filters.
+```
+
+Avoid generic:
+
+```text
+No data.
+```
+
+when more useful context is available.
+
+---
+
+# 49. Destructive Action Rule
+
+Actions such as:
+
+```text
+Delete
+Archive
+Deactivate
+Publish
+Send
+Close campaign
+```
+
+must have appropriate confirmation and clear consequences.
+
+Never hide destructive actions behind ambiguous labels.
+
+---
+
+# 50. Unsaved Changes Rule
+
+For complex forms such as:
+
+```text
+Survey Builder
+Project Configuration
+Action Planning
+```
+
+consider unsaved-change protection.
+
+Do not allow accidental navigation away from substantial edits without warning when the application semantics require it.
+
+---
+
+# 51. URL State Rule
+
+Use URL parameters for state that users reasonably expect to be shareable/bookmarkable.
+
+Examples:
+
+```text
+filters
+pagination
+selected survey
+selected organization node
+report parameters
+```
+
+Do not put every UI state into the URL.
+
+---
+
+# 52. Data Fetching Rule
+
+Avoid unnecessary API calls.
+
+Do not:
+
+```text
+fetch same entity
+fetch same entity again
+fetch same entity again
+```
+
+without reason.
+
+Use appropriate caching/server-state mechanisms.
+
+Invalidate or refresh state after mutations when required.
+
+---
+
+# 53. Race Condition Rule
+
+AI-generated code must consider:
+
+```text
+rapid navigation
+multiple requests
+stale responses
+duplicate submissions
+component unmount
+filter changes
+search typing
+```
+
+Use cancellation/debouncing where appropriate.
+
+---
+
+# 54. Search Rule
+
+Search inputs should not trigger an API request on every keystroke unless the API and UX explicitly support it.
+
+Prefer debouncing for server-side search.
+
+---
+
+# 55. Pagination Rule
+
+Never assume all enterprise data can be loaded at once.
+
+Employee lists, audit logs, survey responses, reports, and organization structures may be large.
+
+Use backend-supported pagination.
+
+---
+
+# 56. Large Dataset Rule
+
+Never generate frontend logic that assumes:
+
+```text
+5,000 employees
+=
+5,000 DOM rows
+```
+
+Use:
+
+* Pagination
+* Virtualization
+* Server-side filtering
+* Server-side sorting
+
+where appropriate.
+
+---
+
+# 57. Environment Rule
+
+Do not hardcode environment-specific configuration.
+
+Use environment variables/configuration for:
+
+```text
+API base URL
+application environment
+feature toggles where appropriate
+public configuration
+```
+
+Never place secrets in Vite-exposed environment variables.
+
+Remember:
+
+```text
+VITE_*
+```
+
+values are browser-visible.
+
+---
+
+# 58. Logging Rule
+
+Production frontend logs must not contain:
+
+```text
+JWT
+access token
+refresh token
+employee PII
+survey response content
+API secrets
+security credentials
+```
+
+Use structured, meaningful error logging.
+
+---
+
+# 59. Performance Rule
+
+Avoid unnecessary:
+
+```text
+re-renders
+large bundles
+duplicate dependencies
+huge component imports
+unnecessary API calls
+large client-side datasets
+```
+
+Lazy-load large feature areas where appropriate.
+
+Especially consider lazy-loading:
+
+```text
+Survey Builder
+Analytics
+Reporting
+AI Analytics
+```
+
+---
+
+# 60. Dependency Rule
+
+Do not install a package merely to solve a problem that can reasonably be solved using:
+
+```text
+React
+TypeScript
+Tailwind
+shadcn/ui
+existing project utilities
+```
+
+Before adding a dependency:
+
+1. Check existing dependencies.
+2. Check whether an existing utility solves it.
+3. Evaluate bundle size.
+4. Evaluate maintenance.
+5. Evaluate security.
+6. Confirm it is necessary.
+
+---
+
+# 61. Refactoring Rule
+
+AI must not perform large-scale refactoring while implementing a feature unless explicitly instructed.
+
+If refactoring is necessary:
+
+```text
+Identify reason
+Document impact
+Keep behavior unchanged
+Run tests
+Verify affected features
+```
+
+---
+
+# 62. Generated Code Must Be Production-Oriented
+
+Do not generate tutorial-style code.
+
+Avoid:
+
+```ts
+// TODO: implement later
+// fake data
+// temporary hack
+// this is just an example
+```
+
+inside production implementation unless the TODO is genuinely tracked and intentional.
+
+---
+
+# 63. Comments
+
+Do not comment obvious code.
+
+Bad:
+
+```ts
+// Set loading to true
+setLoading(true);
+```
+
+Good:
+
+```ts
+// Reports are generated asynchronously, so the job ID
+// is persisted until polling reaches a terminal state.
+```
+
+Comments should explain architectural/business reasoning.
+
+---
+
+# 64. API Contract Changes
+
+If frontend requirements expose a missing backend capability:
+
+Do NOT fake the functionality.
+
+Report:
+
+```text
+BACKEND CONTRACT GAP
+```
+
+with:
+
+```text
+Feature
+Expected operation
+Expected endpoint
+Current backend capability
+Required backend change
+```
+
+The developer can then decide whether to modify the backend.
+
+---
+
+# 65. Frontend-Backend Mismatch Protocol
+
+If the frontend documentation says:
+
+```text
+GET /example
+```
+
+but backend exposes:
+
+```text
+GET /different
+```
+
+do not silently choose one.
+
+Report:
+
+```text
+CONTRACT MISMATCH DETECTED
+```
+
+and provide the evidence.
+
+---
+
+# 66. AI Task Execution Protocol
+
+For every significant task, AI should produce this internal sequence:
+
+```text
+UNDERSTAND
+↓
+INSPECT
+↓
+VERIFY CONTRACT
+↓
+PLAN
+↓
+IMPLEMENT
+↓
+TEST
+↓
+REVIEW
+```
+
+Before modifying code, determine:
+
+```text
+What exists?
+What is missing?
+What owns this responsibility?
+What backend contract supports it?
+What security constraints apply?
+What UI states are required?
+```
+
+---
+
+# 67. Verification Requirements
+
+After implementation, run the appropriate:
+
+```text
+TypeScript typecheck
+Lint
 Unit tests
+Component tests
+Integration tests
+Build
+```
+
+If available, also perform:
+
+```text
+E2E tests
+```
+
+Do not report success based only on compilation.
 
 ---
 
-## Rule 8
+# 68. Visual Verification
 
-Every Repository requires
+For UI tasks, inspect the actual rendered interface.
 
-Indexes
+Verify:
 
-Tenant filters
+```text
+Desktop
+Mobile
+Loading
+Empty
+Error
+Success
+Long content
+Long names
+Large numbers
+Permission restrictions
+```
 
-Soft delete
-
-Optimized queries
-
----
-
-## Rule 9
-
-Every DTO requires
-
-Validation
-
-Examples
-
-Schema annotations
+A component that compiles is not automatically visually complete.
 
 ---
 
-## Rule 10
+# 69. Regression Rule
 
-Never skip acceptance criteria.
+After changing shared components, verify dependent screens.
 
-Every acceptance criterion must have corresponding implementation.
+Especially:
 
----
+```text
+Navigation
+Layout
+API client
+Authentication
+Tenant provider
+Permission system
+Tables
+Forms
+Dialogs
+Design tokens
+```
 
-## Rule 11
-
-Every Business Rule must exist in code.
-
----
-
-## Rule 12
-
-Every Validation Rule must exist in code.
-
----
-
-## Rule 13
-
-Every Permission Rule must exist in Spring Security.
+Shared changes have high blast radius.
 
 ---
 
-## Rule 14
+# 70. Completion Report
 
-Every Domain Event must be implemented.
+When an AI agent completes a task, it should report:
+
+```text
+IMPLEMENTED
+- ...
+
+API INTEGRATION
+- ...
+
+SECURITY / TENANCY
+- ...
+
+TESTS
+- ...
+
+VERIFICATION
+- ...
+
+KNOWN LIMITATIONS
+- ...
+
+BACKEND CONTRACT GAPS
+- None / ...
+```
+
+Do not claim something was tested if it was not actually tested.
 
 ---
 
-## Rule 15
+# 71. Forbidden Behaviors
 
-Do not refactor unrelated modules.
+AI agents MUST NOT:
 
-Implement only the current feature.
+* Invent APIs
+* Invent database behavior
+* Bypass API Gateway
+* Hardcode service URLs
+* Hardcode tenant IDs
+* Hardcode production users
+* Hardcode production metrics
+* Expose secrets
+* Log PII
+* Fake successful API responses
+* Fake report completion
+* Fake notification delivery
+* Bypass RBAC
+* Bypass backend validation
+* Modify audit records
+* Bypass survey version locking
+* Circumvent anonymity suppression
+* Send raw PII to external AI services
+* silently replace APIs with mocks
+* introduce duplicate UI frameworks
+* rewrite unrelated parts of the application
+* claim tests passed when they were not run
 
 ---
 
-## Rule 16
+# 72. Final AI Principle
 
-Never modify completed features unless fixing a dependency issue.
+The AI agent is not the product architect.
 
----
+The AI agent is an implementation assistant operating inside an existing architecture.
 
-## Rule 17
+Therefore:
 
-If the backlog references another feature, implement only the integration point.
+```text
+Do not invent.
+Do not assume.
+Do not bypass.
+Do not fake.
 
-Do not implement future features.
+Inspect.
+Verify.
+Implement.
+Test.
+Report.
+```
 
----
+The final frontend must remain a faithful client of the certified TESP distributed backend.
 
-## Rule 18
+The most important invariant is:
 
-At the end of every implementation produce:
+```text
+Frontend behavior
+        ↓
+Actual API contract
+        ↓
+Actual backend ownership
+        ↓
+Actual security rules
+        ↓
+Actual tenant context
+        ↓
+Actual business workflow
+```
 
-Completed Tasks
-
-Remaining Tasks
-
-Coverage
-
-Technical Debt
-
-Files Modified
-
-Next Task Recommendation
+If any link is uncertain, stop and verify before generating production code.
