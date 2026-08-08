@@ -17,8 +17,10 @@ import { ThemeBrandingPage } from '../features/project-config/pages/ThemeBrandin
 import { FeatureFlagPage } from '../features/project-config/pages/FeatureFlagPage';
 import { LocaleManagementPage } from '../features/project-config/pages/LocaleManagementPage';
 
+// FEAT-002 Organization Hierarchy Domain Pages
+import { OrgHierarchyPage } from '../features/organization/pages/OrgHierarchyPage';
+
 // Domain Component Wrappers
-import { OrgHierarchyManager } from '../components/hierarchy/OrgHierarchyManager';
 import { EmployeeDataGrid } from '../components/employee/EmployeeDataGrid';
 import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
 import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
@@ -47,16 +49,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const OrgHierarchyView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Organizational Hierarchy & Tree Canvas" subtitle="N-ary org tree visualizer and anomaly inspection" />
-      <OrgHierarchyManager projectId={activeProject?.projectId || 'PRJ-99201'} />
-    </div>
-  );
-};
 
 const EmployeeRosterView: React.FC = () => {
   const { activeProject } = useTenant();
@@ -217,7 +209,8 @@ export const router = createBrowserRouter([
       { path: '/settings/features', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><FeatureFlagPage /></RoleGate> },
       { path: '/settings/locales', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><LocaleManagementPage /></RoleGate> },
 
-      { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyView /></RoleGate> },
+      // FEAT-002 Organization Hierarchy Domain Routes
+      { path: '/organization', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><OrgHierarchyPage /></RoleGate> },
       { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterView /></RoleGate> },
 
       { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderView /></RoleGate> },

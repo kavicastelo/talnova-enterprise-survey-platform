@@ -1,33 +1,34 @@
 import React, { useState } from 'react';
-import { OrgNode } from '../../types/organization';
+import { OrgNodeResponse } from '../../types/organization';
+import { Badge } from '../ui/Badge';
 
 interface OrgTreeCanvasProps {
-  nodes: OrgNode[];
-  onSelectNode?: (node: OrgNode) => void;
+  nodes: OrgNodeResponse[];
+  onSelectNode?: (node: OrgNodeResponse) => void;
   onMoveNodeAttempt?: (draggedNodeId: string, targetParentId: string) => void;
 }
 
 interface TreeNodeProps {
-  node: OrgNode;
-  allNodes: OrgNode[];
+  node: OrgNodeResponse;
+  allNodes: OrgNodeResponse[];
   level: number;
   searchFilter: string;
-  onSelectNode?: (node: OrgNode) => void;
+  onSelectNode?: (node: OrgNodeResponse) => void;
   onMoveNodeAttempt?: (draggedNodeId: string, targetParentId: string) => void;
 }
 
-const getNodeTypeBadgeColor = (type: string): { bg: string; color: string } => {
+const getNodeBadgeVariant = (type: string): 'success' | 'warning' | 'info' | 'danger' | 'neutral' => {
   switch (type.toUpperCase()) {
     case 'COMPANY':
-      return { bg: '#1e3a8a', color: '#ffffff' };
+      return 'info';
     case 'DIVISION':
-      return { bg: '#2563eb', color: '#ffffff' };
+      return 'neutral';
     case 'DEPARTMENT':
-      return { bg: '#0284c7', color: '#ffffff' };
+      return 'success';
     case 'TEAM':
-      return { bg: '#16a34a', color: '#ffffff' };
+      return 'warning';
     default:
-      return { bg: '#64748b', color: '#ffffff' };
+      return 'neutral';
   }
 };
 
@@ -37,7 +38,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   level,
   searchFilter,
   onSelectNode,
-  onMoveNodeAttempt
+  onMoveNodeAttempt,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const children = allNodes.filter((n) => n.parentId === node.nodeId);
@@ -47,8 +48,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     node.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
     node.type.toLowerCase().includes(searchFilter.toLowerCase()) ||
     node.nodeId.toLowerCase().includes(searchFilter.toLowerCase());
-
-  const badgeStyle = getNodeTypeBadgeColor(node.type);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', node.nodeId);
@@ -71,7 +70,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   }
 
   return (
-    <div style={{ marginLeft: `${level * 24}px`, marginTop: '8px', marginBottom: '8px' }}>
+    <div style={{ marginLeft: `${level * 20}px`, marginTop: '8px', marginBottom: '8px' }}>
       <div
         draggable
         onDragStart={handleDragStart}
@@ -88,7 +87,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           border: '1px solid #e2e8f0',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           cursor: 'pointer',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.2s ease',
         }}
       >
         {children.length > 0 ? (
@@ -106,7 +105,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               fontWeight: 700,
               cursor: 'pointer',
               display: 'grid',
-              placeItems: 'center'
+              placeItems: 'center',
             }}
           >
             {isExpanded ? '−' : '+'}
@@ -125,18 +124,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           </div>
         </div>
 
-        <span
-          style={{
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            padding: '4px 10px',
-            borderRadius: '12px',
-            background: badgeStyle.bg,
-            color: badgeStyle.color
-          }}
-        >
-          {node.type}
-        </span>
+        <Badge variant={getNodeBadgeVariant(node.type)}>{node.type}</Badge>
 
         <span style={{ fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
           Depth {node.depth}
@@ -150,7 +138,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
       </div>
 
       {isExpanded && children.length > 0 && (
-        <div style={{ borderLeft: '2px dashed #cbd5e1', marginLeft: `${level * 24 + 12}px`, paddingLeft: '8px' }}>
+        <div style={{ borderLeft: '2px dashed #cbd5e1', marginLeft: `${level * 20 + 12}px`, paddingLeft: '8px' }}>
           {children.map((child) => (
             <TreeNode
               key={child.nodeId}
