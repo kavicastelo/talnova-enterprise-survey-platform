@@ -205,7 +205,7 @@ export const SurveyPlayerPage: React.FC<Props> = ({
                   </label>
 
                   {/* LIKERT Scale (1-5 Buttons) */}
-                  {(q.type === 'LIKERT' || q.type === 'RATING_STARS') && (
+                  {(q.type === 'LIKERT' || (q.type as string) === 'RATING_STARS') && (
                     <div style={{ display: 'flex', gap: '10px' }}>
                       {[1, 2, 3, 4, 5].map((val) => (
                         <button
@@ -224,7 +224,7 @@ export const SurveyPlayerPage: React.FC<Props> = ({
                             fontSize: '15px',
                           }}
                         >
-                          {q.type === 'RATING_STARS' ? `${'★'.repeat(val)}` : val}
+                          {(q.type as string) === 'RATING_STARS' ? `${'★'.repeat(val)}` : val}
                         </button>
                       ))}
                     </div>
@@ -263,7 +263,7 @@ export const SurveyPlayerPage: React.FC<Props> = ({
                   )}
 
                   {/* Open Text Input / Textarea */}
-                  {(q.type === 'TEXT_OPEN' || q.type === 'LONG_TEXT' || q.type === 'SHORT_TEXT') && (
+                  {((q.type as string) === 'TEXT_OPEN' || q.type === 'LONG_TEXT' || q.type === 'SHORT_TEXT') && (
                     <textarea
                       rows={q.type === 'LONG_TEXT' ? 4 : 2}
                       value={currentAns.textValue || ''}

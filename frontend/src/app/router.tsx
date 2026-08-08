@@ -23,8 +23,10 @@ import { OrgHierarchyPage } from '../features/organization/pages/OrgHierarchyPag
 // FEAT-003 Employee Management Domain Pages
 import { EmployeeRosterPage } from '../features/employee/pages/EmployeeRosterPage';
 
+// FEAT-004 Survey Builder Domain Pages
+import { SurveyBuilderPage } from '../features/survey-builder/pages/SurveyBuilderPage';
+
 // Domain Component Wrappers
-import { SurveyBuilderCanvas } from '../components/survey-builder/SurveyBuilderCanvas';
 import { CampaignLaunchWizard } from '../components/distribution/CampaignLaunchWizard';
 import { OrganizationalHeatmapGrid } from '../components/analytics/OrganizationalHeatmapGrid';
 import { SentimentAnalyticsPanel } from '../components/ai/SentimentAnalyticsPanel';
@@ -51,16 +53,6 @@ const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = (
     </Card>
   </div>
 );
-
-const SurveyBuilderView: React.FC = () => {
-  const { activeProject } = useTenant();
-  return (
-    <div>
-      <PageHeader title="Survey Builder Studio" subtitle="Drag & drop question canvas, logic branching, and publishing" />
-      <SurveyBuilderCanvas projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" />
-    </div>
-  );
-};
 
 const DistributionView: React.FC = () => {
   const { activeProject } = useTenant();
@@ -202,7 +194,9 @@ export const router = createBrowserRouter([
       // FEAT-003 Employee Management Domain Routes
       { path: '/employees', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><EmployeeRosterPage /></RoleGate> },
 
-      { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderView /></RoleGate> },
+      // FEAT-004 Survey Builder Domain Routes
+      { path: '/surveys', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><SurveyBuilderPage /></RoleGate> },
+
       { path: '/distribution', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER']}><DistributionView /></RoleGate> },
 
       { path: '/analytics', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH']}><AnalyticsView /></RoleGate> },
