@@ -1,4 +1,3 @@
-import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { MainPlatformLayout } from '../layouts/MainPlatformLayout';
 import { AuthLayout } from '../layouts/AuthLayout';
@@ -41,27 +40,14 @@ import { ReportingCenterPage } from '../features/reporting/pages/ReportingCenter
 // FEAT-010 Action Planning Domain Pages
 import { ActionKanbanBoardPage } from '../features/action-planning/pages/ActionKanbanBoardPage';
 
+// Notification & Audit Domain Pages
+import { NotificationLogsPage } from '../features/notifications/pages/NotificationLogsPage';
+import { AuditTrailPage } from '../features/audit/pages/AuditTrailPage';
+
 // Domain Component Wrappers
 import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
 import { SurveyPlayerPage } from '../components/player/SurveyPlayerPage';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Card } from '../components/ui/Card';
 import { SurveyResponse } from '../types/survey';
-
-const DummyView: React.FC<{ title: string; subtitle: string; icon: string }> = ({ title, subtitle, icon }) => (
-  <div>
-    <PageHeader title={title} subtitle={subtitle} />
-    <Card variant="bordered">
-      <div style={{ padding: '32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '12px' }}>{icon}</div>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>{title} Module Connected</h3>
-        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-          This business domain interface is ready for production feature integration against the API Gateway (:8080).
-        </p>
-      </div>
-    </Card>
-  </div>
-);
 
 const DEFAULT_DEMO_SURVEY: SurveyResponse = {
   id: 'SRV-5001',
@@ -153,8 +139,9 @@ export const router = createBrowserRouter([
       // FEAT-010 Action Planning Domain Routes
       { path: '/action-plans', element: <FeatureGate flag="actionPlanningEnabled"><RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}><ActionKanbanBoardPage /></RoleGate></FeatureGate> },
 
-      { path: '/notifications', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Notification Delivery Logs" subtitle="Inspect Kafka email and SMS dispatch delivery statuses" icon="🔔" /></RoleGate> },
-      { path: '/audit', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><DummyView title="Immutable System Audit Trail" subtitle="Write-once audit log inspector with correlation ID tracking" icon="🛡️" /></RoleGate> },
+      // Notification & Audit Domain Routes
+      { path: '/notifications', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><NotificationLogsPage /></RoleGate> },
+      { path: '/audit', element: <RoleGate allowedRoles={['SUPER_ADMIN', 'PROJECT_ADMIN']}><AuditTrailPage /></RoleGate> },
     ],
   },
 ]);
