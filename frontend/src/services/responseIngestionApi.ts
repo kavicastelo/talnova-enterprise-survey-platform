@@ -1,9 +1,8 @@
-import { IngestionResponse, ResponseSubmission } from '../types/response';
+import { IngestionResponse, ResponseSubmissionRequest } from '../types/responseIntake';
+import { responseIntakeApi } from '../features/response-intake/api/responseIntakeApi';
 import { queueOfflineResponse } from '../utils/offlineQueueSync';
 
-const API_BASE = '/api/v1/responses';
-
-export async function submitResponse(payload: ResponseSubmission): Promise<IngestionResponse> {
+export async function submitResponse(payload: ResponseSubmissionRequest): Promise<IngestionResponse> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     await queueOfflineResponse(payload);
     return {
@@ -15,21 +14,7 @@ export async function submitResponse(payload: ResponseSubmission): Promise<Inges
   }
 
   try {
-    const res = await fetch(API_BASE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Project-ID': payload.projectId,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      throw new Error(json.message || 'Failed to submit survey response');
-    }
-
-    return json.data;
+    return await responseIntakeApi.submitResponse(payload);
   } catch (err: any) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       await queueOfflineResponse(payload);
