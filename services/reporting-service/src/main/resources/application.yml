@@ -17,4 +17,4 @@ management:
 aws:
   s3:
     bucket-name: ${S3_BUCKET_NAME:tesp-report-exports}
-    region: ${AWS_REGION:us-east-1}
+    region: ${AWS_REGION:ap-south-1}
