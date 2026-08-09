@@ -22,7 +22,7 @@ const KANBAN_COLUMNS: { key: ActionStatus; label: string; bg: string; border: st
 
 export const ActionKanbanBoardPage: React.FC = () => {
   const { activeProject } = useTenant();
-  const [nodeId, setNodeId] = useState<string>('N-301');
+  const [nodeId, setNodeId] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
   const projectId = activeProject?.projectId || 'PRJ-99201';

@@ -18,7 +18,7 @@ export const AiAnalyticsPage: React.FC = () => {
   const { activeProject } = useTenant();
   const [activeTab, setActiveTab] = useState<string>('sentiment');
 
-  const campaignId = 'CMP-101';
+  const campaignId = 'CMP-77102';
   const projectId = activeProject?.projectId || 'PRJ-99201';
 
   const {

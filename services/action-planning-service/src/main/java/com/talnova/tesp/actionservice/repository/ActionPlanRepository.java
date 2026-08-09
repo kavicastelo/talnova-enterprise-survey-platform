@@ -17,7 +17,9 @@ public interface ActionPlanRepository extends MongoRepository<ActionPlanDocument
 
     List<ActionPlanDocument> findByProjectIdAndNodeId(String projectId, String nodeId);
 
-    List<ActionPlanDocument> findByProjectIdAndCampaignId(String projectId, String campaignId);
+    List<ActionPlanDocument> findByProjectId(String projectId);
+
+    boolean existsByProjectId(String projectId);
 
     List<ActionPlanDocument> findByAssigneeIdAndStatus(String assigneeId, ActionStatus status);
 }

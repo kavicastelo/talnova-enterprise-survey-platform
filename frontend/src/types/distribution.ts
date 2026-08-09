@@ -40,12 +40,17 @@ export interface CampaignCreateRequest {
 }
 
 export interface CampaignMetrics {
-  totalTargeted: number;
-  totalDispatched: number;
-  totalOpened: number;
-  totalCompleted: number;
-  responseRatePercent: number;
-  bounceRatePercent: number;
+  totalTargeted?: number;
+  totalDispatched?: number;
+  totalOpened?: number;
+  totalCompleted?: number;
+  responseRatePercent?: number;
+  bounceRatePercent?: number;
+  sent?: number;
+  delivered?: number;
+  opened?: number;
+  completed?: number;
+  bounced?: number;
 }
 
 export interface CampaignResponse {
