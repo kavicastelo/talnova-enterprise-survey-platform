@@ -77,7 +77,7 @@ graph TB
         WAF["AWS WAF Security Rules"]
     end
 
-    subgraph Region["AWS Region us-east-1"]
+    subgraph Region["AWS Region ap-south-1"]
 
         subgraph VPC["Virtual Private Cloud (10.0.0.0/16)"]
 
@@ -252,7 +252,7 @@ resource "aws_ecs_task_definition" "service_task" {
       logDriver = "awslogs"
       options = {
         "awslogs-group"         = "/ecs/tesp-${var.service_name}"
-        "awslogs-region"        = "us-east-1"
+        "awslogs-region"        = "ap-south-1"
         "awslogs-stream-prefix" = "ecs"
       }
     }

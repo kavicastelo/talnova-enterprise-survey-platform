@@ -14,7 +14,7 @@ public class MongoCsfleConfig {
 
     private static final Logger log = LoggerFactory.getLogger(MongoCsfleConfig.class);
 
-    @Value("${app.csfle.kms-key-arn:arn:aws:kms:us-east-1:123456789012:key/tesp-csfle-key}")
+    @Value("${app.csfle.kms-key-arn:arn:aws:kms:ap-south-1:123456789012:key/tesp-csfle-key}")
     private String kmsKeyArn;
 
     @Value("${app.csfle.key-vault-namespace:tesp_employee_db.__keyVault}")
@@ -38,7 +38,8 @@ public class MongoCsfleConfig {
         Map<String, Map<String, Object>> kmsProviders = new HashMap<>();
         kmsProviders.put("local", localKeyDetails);
 
-        log.info("Initialized MongoDB CSFLE local fallback KMS provider map for key vault namespace '{}'", keyVaultNamespace);
+        log.info("Initialized MongoDB CSFLE local fallback KMS provider map for key vault namespace '{}'",
+                keyVaultNamespace);
         return kmsProviders;
     }
 }

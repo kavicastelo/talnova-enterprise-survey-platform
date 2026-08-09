@@ -21,10 +21,11 @@ class EmployeeServiceApplicationTest {
     @DisplayName("TC-EMP-201-B: MongoCsfleConfig initializes CSFLE key vault namespace and KMS provider map FR-EMP-002")
     void testMongoCsfleConfigInitialization() {
         MongoCsfleConfig csfleConfig = new MongoCsfleConfig();
-        ReflectionTestUtils.setField(csfleConfig, "kmsKeyArn", "arn:aws:kms:us-east-1:123456789012:key/tesp-csfle-key");
+        ReflectionTestUtils.setField(csfleConfig, "kmsKeyArn",
+                "arn:aws:kms:ap-south-1:123456789012:key/tesp-csfle-key");
         ReflectionTestUtils.setField(csfleConfig, "keyVaultNamespace", "tesp_employee_db.__keyVault");
 
-        assertEquals("arn:aws:kms:us-east-1:123456789012:key/tesp-csfle-key", csfleConfig.getKmsKeyArn());
+        assertEquals("arn:aws:kms:ap-south-1:123456789012:key/tesp-csfle-key", csfleConfig.getKmsKeyArn());
         assertEquals("tesp_employee_db.__keyVault", csfleConfig.getKeyVaultNamespace());
 
         Map<String, Map<String, Object>> kmsProviders = csfleConfig.createLocalKmsProviderMap();

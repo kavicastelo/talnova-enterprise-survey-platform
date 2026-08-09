@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Configuration
 public class S3Config {
 
-    @Value("${aws.s3.region:us-east-1}")
+    @Value("${aws.s3.region:ap-south-1}")
     private String awsRegion;
 
     @Bean

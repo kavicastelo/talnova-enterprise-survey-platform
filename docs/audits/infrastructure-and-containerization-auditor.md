@@ -127,7 +127,7 @@ Viewed ci.yml:1-38
 ## 9. Infrastructure as Code (Terraform)
 
 - **Terraform Version**: `>= 1.5.0`
-- **Backend State**: AWS S3 (`tesp-terraform-state-us-east-1`) with DynamoDB lock table (`tesp-terraform-locks`).
+- **Backend State**: AWS S3 (`tesp-terraform-state-ap-south-1`) with DynamoDB lock table (`tesp-terraform-locks`).
 - **AWS Resources Defined**:
   - `aws_ecs_cluster.main`: `tesp-cluster-${var.environment}`
   - `aws_kms_key.employee_pii`: CSFLE Client-Side Field Level Encryption Key for `employee-service`.

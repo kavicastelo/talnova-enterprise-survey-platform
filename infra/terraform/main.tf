@@ -7,9 +7,9 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "tesp-terraform-state-us-east-1"
+    bucket         = "tesp-terraform-state-ap-south-1"
     key            = "platform/terraform.tfstate"
-    region         = "us-east-1"
+    region         = "ap-south-1"
     dynamodb_table = "tesp-terraform-locks"
   }
 }

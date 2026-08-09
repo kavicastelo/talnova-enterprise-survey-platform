@@ -9,14 +9,14 @@ spring:
       enabled: true
   data:
     mongodb:
-      uri: mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/tesp_employee_db
+      uri: ${MONGODB_URI:mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/tesp_employee_db}
       auto-index-creation: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 app:
   csfle:
-    kms-key-arn: ${AWS_KMS_KEY_ARN:arn:aws:kms:us-east-1:123456789012:key/tesp-csfle-key}
+    kms-key-arn: ${AWS_KMS_KEY_ARN:arn:aws:kms:ap-south-1:123456789012:key/tesp-csfle-key}
     key-vault-namespace: tesp_employee_db.__keyVault
   kafka:
     topics:
