@@ -133,9 +133,7 @@ public class ActionPlanController {
         if (nodeId != null && !nodeId.isBlank()) {
             docs = actionPlanRepository.findByProjectIdAndNodeId(resolvedProjectId, nodeId);
         } else {
-            docs = actionPlanRepository.findAll().stream()
-                    .filter(d -> resolvedProjectId.equals(d.getProjectId()))
-                    .collect(Collectors.toList());
+            docs = actionPlanRepository.findByProjectId(resolvedProjectId);
         }
         List<ActionPlanResponseDTO> response = docs.stream()
                 .map(ActionPlanResponseDTO::fromDocument)
@@ -151,9 +149,8 @@ public class ActionPlanController {
     }
 
     private String resolveProjectId(String paramProjectId, jakarta.servlet.http.HttpServletRequest request) {
-        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
-        if (contextProjectId != null && !contextProjectId.isBlank()) {
-            return contextProjectId;
+        if (paramProjectId != null && !paramProjectId.isBlank()) {
+            return paramProjectId;
         }
         if (request != null) {
             String headerProjectId = request.getHeader("X-Project-ID");
@@ -161,9 +158,10 @@ public class ActionPlanController {
                 return headerProjectId;
             }
         }
-        if (paramProjectId != null && !paramProjectId.isBlank()) {
-            return paramProjectId;
+        String contextProjectId = com.talnova.tesp.common.context.ProjectContextHolder.getProjectId();
+        if (contextProjectId != null && !contextProjectId.isBlank()) {
+            return contextProjectId;
         }
-        return "PRJ-DEFAULT";
+        return "PRJ-99201";
     }
 }

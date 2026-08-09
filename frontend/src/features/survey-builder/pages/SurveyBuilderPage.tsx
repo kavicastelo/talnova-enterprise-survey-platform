@@ -12,7 +12,7 @@ export const SurveyBuilderPage: React.FC = () => {
         title="Metadata-Driven Survey Builder Studio"
         subtitle={`Design questionnaire Abstract Syntax Trees (AST), logic branching rules, and AI bias detection for ${activeProject?.projectId}`}
       />
-      <SurveyBuilderCanvas projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SRV-5001" />
+      <SurveyBuilderCanvas projectId={activeProject?.projectId || 'PRJ-99201'} surveyId="SUR-88102" />
     </div>
   );
 };

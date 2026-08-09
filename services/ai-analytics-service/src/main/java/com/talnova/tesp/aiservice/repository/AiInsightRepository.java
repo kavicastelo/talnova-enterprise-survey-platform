@@ -13,6 +13,8 @@ public interface AiInsightRepository extends MongoRepository<AiInsightDocument, 
 
     List<AiInsightDocument> findByProjectIdAndCampaignId(String projectId, String campaignId);
 
+    boolean existsByProjectId(String projectId);
+
     Optional<AiInsightDocument> findByResponseIdAndQuestionId(String responseId, String questionId);
 
     List<AiInsightDocument> findByProjectIdAndRiskSeverity(String projectId, RiskSeverity riskSeverity);

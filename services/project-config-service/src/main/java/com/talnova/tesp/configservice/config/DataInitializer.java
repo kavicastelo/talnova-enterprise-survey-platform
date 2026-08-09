@@ -27,10 +27,14 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        String defaultProjectId = "PRJ-DEFAULT-001";
+        seedProject("PRJ-DEFAULT-001", "Default Survey Project");
+        seedProject("PRJ-99201", "Aitken Spence Enterprise Workspace");
+    }
+
+    private void seedProject(String projectId, String name) {
         try {
-            if (!projectRepository.existsByProjectIdAndIsDeletedFalse(defaultProjectId)) {
-                log.info("Seeding default project workspace '{}'...", defaultProjectId);
+            if (!projectRepository.existsByProjectIdAndIsDeletedFalse(projectId)) {
+                log.info("Seeding default project workspace '{}'...", projectId);
 
                 BrandingConfig branding = BrandingConfig.builder()
                         .companyName("Talnova Enterprise")
@@ -43,30 +47,29 @@ public class DataInitializer implements CommandLineRunner {
                 FeatureFlags features = FeatureFlags.builder()
                         .aiAnalyticsEnabled(true)
                         .actionPlanningEnabled(true)
-                        .kioskModeEnabled(false)
-                        .smsDistributionEnabled(false)
+                        .kioskModeEnabled(true)
+                        .smsDistributionEnabled(true)
                         .build();
 
                 ProjectDocument defaultProject = ProjectDocument.builder()
-                        .projectId(defaultProjectId)
-                        .name("Default Survey Project")
+                        .projectId(projectId)
+                        .name(name)
                         .status(com.talnova.tesp.configservice.domain.ProjectStatus.ACTIVE)
                         .branding(branding)
-                        .supportedLocales(List.of("en-US"))
+                        .supportedLocales(List.of("en-US", "es-ES"))
                         .defaultLocale("en-US")
                         .features(features)
                         .customAttributeDefinitions(Collections.emptyList())
-                        .version(0)
                         .isDeleted(false)
                         .createdAt(Instant.now())
                         .updatedAt(Instant.now())
                         .build();
 
                 projectRepository.save(defaultProject);
-                log.info("Default project workspace '{}' successfully seeded into MongoDB.", defaultProjectId);
+                log.info("Project workspace '{}' successfully seeded into MongoDB.", projectId);
             }
         } catch (Exception ex) {
-            log.debug("Notice: DataInitializer skipped: {}", ex.getMessage());
+            log.error("DataInitializer error for {}:", projectId, ex);
         }
     }
 }
