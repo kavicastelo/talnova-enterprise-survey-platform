@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { OrgNodeResponse } from '../../types/organization';
 import { Badge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
+import { Button } from '../ui/Button';
 
 interface OrgTreeCanvasProps {
   nodes: OrgNodeResponse[];
   onSelectNode?: (node: OrgNodeResponse) => void;
   onMoveNodeAttempt?: (draggedNodeId: string, targetParentId: string) => void;
+  onCreateRootNode?: () => void;
 }
 
 interface TreeNodeProps {
@@ -156,7 +159,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   );
 };
 
-export const OrgTreeCanvas: React.FC<OrgTreeCanvasProps> = ({ nodes, onSelectNode, onMoveNodeAttempt }) => {
+export const OrgTreeCanvas: React.FC<OrgTreeCanvasProps> = ({ nodes, onSelectNode, onMoveNodeAttempt, onCreateRootNode }) => {
   const [searchFilter, setSearchFilter] = useState<string>('');
 
   const rootNodes = nodes.filter((n) => !n.parentId || n.parentId.trim() === '');
@@ -173,19 +176,48 @@ export const OrgTreeCanvas: React.FC<OrgTreeCanvasProps> = ({ nodes, onSelectNod
             Materialized path tree visualizer with arbitrary depth exploration and drag-and-drop re-parenting.
           </p>
         </div>
-        <input
-          type="text"
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          placeholder="🔍 Search node name or type..."
-          style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', width: '260px' }}
-        />
+        {nodes.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="🔍 Search node name or type..."
+              style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', width: '240px' }}
+            />
+            {searchFilter && (
+              <Button variant="secondary" size="sm" onClick={() => setSearchFilter('')}>
+                Clear
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {rootNodes.length === 0 ? (
-        <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', background: '#ffffff', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-          No root organization nodes found for this workspace.
-        </div>
+      {nodes.length === 0 ? (
+        <EmptyState
+          title="No Organization Nodes Created Yet"
+          description="Create your root enterprise organization node (e.g. Company or Head Office) to build your reporting tree."
+          action={
+            onCreateRootNode ? (
+              <Button variant="primary" size="sm" onClick={onCreateRootNode}>
+                + Create Root Organization Node
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : rootNodes.length === 0 ? (
+        <EmptyState
+          title="No Root Nodes Found"
+          description="No top-level root organization nodes exist in this workspace hierarchy."
+          action={
+            onCreateRootNode ? (
+              <Button variant="primary" size="sm" onClick={onCreateRootNode}>
+                + Create Root Organization Node
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div>
           {rootNodes.map((rootNode) => (

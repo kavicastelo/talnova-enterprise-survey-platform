@@ -131,4 +131,24 @@ describe('FEAT-001 Project Configuration Domain Integration', () => {
     expect(result.passed).toBe(true);
     expect(result.wcagLevel).toBe('AAA');
   });
+
+  it('getPublicTheme calls GET /projects/{projectId}/public-theme', async () => {
+    const spy = vi.spyOn(apiClient, 'get').mockResolvedValue({
+      success: true,
+      data: {
+        projectId: 'PRJ-99201',
+        companyName: 'Aitken Spence PLC',
+        primaryColor: '#1E3A8A',
+        secondaryColor: '#3B82F6',
+        logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png',
+        defaultLocale: 'en-US',
+      },
+    });
+
+    const result = await projectConfigApi.getPublicTheme('PRJ-99201');
+
+    expect(spy).toHaveBeenCalledWith('/projects/PRJ-99201/public-theme');
+    expect(result.companyName).toBe('Aitken Spence PLC');
+    expect(result.defaultLocale).toBe('en-US');
+  });
 });

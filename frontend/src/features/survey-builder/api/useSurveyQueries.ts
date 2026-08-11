@@ -84,3 +84,35 @@ export function useAnalyzeBiasMutation() {
     },
   });
 }
+
+export function useTranslateTextMutation() {
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: { sourceText: string; targetLocales: string[]; sourceLocale?: string }) =>
+      surveyApi.translateText(payload),
+    onSuccess: () => {
+      showSuccess('AI Multi-language translations generated!');
+    },
+    onError: (err: any) => {
+      showError(err.message || 'AI Multi-language translation failed.');
+    },
+  });
+}
+
+export function useCreateQuestionTemplateMutation() {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: any) => surveyApi.createQuestionTemplate(payload),
+    onSuccess: () => {
+      showSuccess('Saved question template to Question Library catalog!');
+      queryClient.invalidateQueries({ queryKey: ['question-library'] });
+    },
+    onError: (err: any) => {
+      showError(err.message || 'Failed to save question template.');
+    },
+  });
+}
+

@@ -5,6 +5,9 @@ import {
   AIBiasAnalysisRequest,
   AIBiasAnalysisResponse,
   QuestionLibraryTemplate,
+  AITranslateRequest,
+  AITranslateResponse,
+  QuestionLibraryCreateDTO,
 } from '../../../types/survey';
 
 const BASE_URL = '/surveys';
@@ -38,6 +41,11 @@ export const surveyApi = {
     return res.data || res;
   },
 
+  async translateText(payload: AITranslateRequest): Promise<AITranslateResponse> {
+    const res: any = await apiClient.post(`${BASE_URL}/ai/translate`, payload);
+    return res.data || res;
+  },
+
   async searchQuestionLibrary(category?: string, search?: string): Promise<QuestionLibraryTemplate[]> {
     const params: Record<string, any> = {};
     if (category) params.category = category;
@@ -46,4 +54,10 @@ export const surveyApi = {
     const res: any = await apiClient.get('/question-library', { params });
     return res.data || res;
   },
+
+  async createQuestionTemplate(payload: QuestionLibraryCreateDTO): Promise<QuestionLibraryTemplate> {
+    const res: any = await apiClient.post('/question-library', payload);
+    return res.data || res;
+  },
 };
+

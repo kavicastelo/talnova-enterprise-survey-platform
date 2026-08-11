@@ -221,4 +221,57 @@ describe('FEAT-004 Survey Builder Domain Integration', () => {
       },
     });
   });
+
+  it('translateText calls POST /surveys/ai/translate via gateway client', async () => {
+    const mockResponse = {
+      translations: {
+        'si-LK': 'මගේ කළමනාකරු පැහැදිලි මගපෙන්වීමක් ලබා දෙයි.',
+        'ta-LK': 'எனது மேலாளர் தெளிவான கருத்துக்களை வழங்குகிறார்.',
+      },
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      success: true,
+      data: mockResponse,
+    });
+
+    const payload = {
+      sourceText: 'My manager provides clear direction.',
+      targetLocales: ['si-LK', 'ta-LK'],
+      sourceLocale: 'en-US',
+    };
+
+    const result = await surveyApi.translateText(payload);
+
+    expect(spy).toHaveBeenCalledWith('/surveys/ai/translate', payload);
+    expect(result.translations['si-LK']).toBe('මගේ කළමනාකරු පැහැදිලි මගපෙන්වීමක් ලබා දෙයි.');
+  });
+
+  it('createQuestionTemplate calls POST /question-library via gateway client', async () => {
+    const mockResponse = {
+      libraryId: 'LIB-991',
+      category: 'ENGAGEMENT',
+      themeGroup: 'GRP-LEADERSHIP',
+      defaultPrompt: { 'en-US': 'Saved prompt' },
+      questionType: 'LIKERT' as const,
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      success: true,
+      data: mockResponse,
+    });
+
+    const payload = {
+      category: 'ENGAGEMENT',
+      themeGroup: 'GRP-LEADERSHIP',
+      defaultPrompt: { 'en-US': 'Saved prompt' },
+      questionType: 'LIKERT' as const,
+    };
+
+    const result = await surveyApi.createQuestionTemplate(payload);
+
+    expect(spy).toHaveBeenCalledWith('/question-library', payload);
+    expect(result.libraryId).toBe('LIB-991');
+  });
 });
+

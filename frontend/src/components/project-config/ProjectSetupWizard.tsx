@@ -24,11 +24,11 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
   const createMutation = useCreateProjectMutation();
 
   const [formData, setFormData] = useState<ProjectCreateRequest>({
-    projectId: 'PRJ-99201',
-    name: 'Aitken Spence Enterprise Workspace',
+    projectId: '',
+    name: '',
     branding: {
-      companyName: 'Aitken Spence PLC',
-      logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png',
+      companyName: '',
+      logoUrl: '',
       primaryColor: '#1E3A8A',
       secondaryColor: '#3B82F6',
       customCssUrl: '',
@@ -175,7 +175,7 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
           <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', margin: '0 0 12px 0' }}>
             🎨 White-Label Branding Setup
           </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
             <Input
               label="Company Name"
               value={formData.branding.companyName}
@@ -185,6 +185,7 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
                   branding: { ...formData.branding, companyName: e.target.value },
                 })
               }
+              placeholder="e.g. Aitken Spence PLC"
               required
             />
             <Input
@@ -220,6 +221,32 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
               }
               placeholder="https://s3.amazonaws.com/tesp-assets/logo.png"
             />
+          </div>
+
+          {/* Live Branding Preview Swatch */}
+          <div style={{ background: '#ffffff', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Live Theme Preview
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '6px', background: formData.branding.primaryColor || '#1E3A8A', color: '#ffffff' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                {formData.branding.companyName || 'Enterprise Workspace Name'}
+              </div>
+              <button
+                type="button"
+                style={{
+                  background: formData.branding.secondaryColor || '#3B82F6',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                }}
+              >
+                Sample Action
+              </button>
+            </div>
           </div>
         </div>
 

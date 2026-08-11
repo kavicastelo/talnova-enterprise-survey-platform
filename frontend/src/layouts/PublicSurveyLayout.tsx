@@ -34,6 +34,18 @@ export const PublicSurveyLayout: React.FC<PublicSurveyLayoutProps> = ({ projectI
   const secondaryColor = theme?.secondaryColor || '#3B82F6';
   const companyName = theme?.companyName || 'Enterprise Survey';
 
+  const BCP47_SHORT_NAMES: Record<string, string> = {
+    'en-US': 'English (US)',
+    'si-LK': 'Sinhala',
+    'ta-LK': 'Tamil',
+    'fr-FR': 'French',
+    'de-DE': 'German',
+    'ja-JP': 'Japanese',
+    'es-ES': 'Spanish',
+  };
+
+  const displayLanguage = BCP47_SHORT_NAMES[theme?.defaultLocale || 'en-US'] || theme?.defaultLocale || 'en-US';
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
       {/* Unauthenticated White-Label Header */}
@@ -41,10 +53,12 @@ export const PublicSurveyLayout: React.FC<PublicSurveyLayoutProps> = ({ projectI
         style={{
           background: primaryColor,
           color: '#ffffff',
-          padding: '16px 32px',
+          padding: '16px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         }}
       >
@@ -56,7 +70,9 @@ export const PublicSurveyLayout: React.FC<PublicSurveyLayoutProps> = ({ projectI
               {companyName.charAt(0)}
             </div>
           )}
-          <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em' }}>{companyName}</span>
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+            {companyName}
+          </span>
         </div>
 
         <div
@@ -64,14 +80,15 @@ export const PublicSurveyLayout: React.FC<PublicSurveyLayoutProps> = ({ projectI
             fontSize: '0.75rem',
             fontWeight: 700,
             background: secondaryColor,
-            padding: '4px 10px',
+            padding: '4px 12px',
             borderRadius: '12px',
             color: '#ffffff',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
           }}
         >
-          {theme?.defaultLocale || 'en-US'}
+          🌐 {displayLanguage}
         </div>
       </header>
 

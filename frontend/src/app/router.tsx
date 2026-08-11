@@ -3,6 +3,7 @@ import { MainPlatformLayout } from '../layouts/MainPlatformLayout';
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout';
 import { ConsultantLayout } from '../layouts/ConsultantLayout';
 import { AuthLayout } from '../layouts/AuthLayout';
+import { PublicSurveyLayout } from '../layouts/PublicSurveyLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { RoleGate } from '../components/auth/RoleGate';
 import { FeatureGate } from '../components/auth/FeatureGate';
@@ -77,25 +78,29 @@ export const router = createBrowserRouter([
   {
     path: '/s/:token',
     element: (
-      <SurveyPlayerPage
-        projectId="PRJ-99201"
-        campaignId="CMP-101"
-        surveyId="SRV-5001"
-        responseToken="DEMO-TOKEN-123"
-        respondentType="AUTHENTICATED"
-        survey={DEFAULT_DEMO_SURVEY}
-      />
+      <PublicSurveyLayout projectId="PRJ-99201">
+        <SurveyPlayerPage
+          projectId="PRJ-99201"
+          campaignId="CMP-101"
+          surveyId="SRV-5001"
+          responseToken="DEMO-TOKEN-123"
+          respondentType="AUTHENTICATED"
+          survey={DEFAULT_DEMO_SURVEY}
+        />
+      </PublicSurveyLayout>
     ),
   },
   {
     path: '/kiosk/:surveyId',
     element: (
-      <KioskPlayerPage
-        projectId="PRJ-99201"
-        campaignId="CMP-101"
-        surveyId="SRV-5001"
-        survey={DEFAULT_DEMO_SURVEY}
-      />
+      <PublicSurveyLayout projectId="PRJ-99201">
+        <KioskPlayerPage
+          projectId="PRJ-99201"
+          campaignId="CMP-101"
+          surveyId="SRV-5001"
+          survey={DEFAULT_DEMO_SURVEY}
+        />
+      </PublicSurveyLayout>
     ),
   },
 

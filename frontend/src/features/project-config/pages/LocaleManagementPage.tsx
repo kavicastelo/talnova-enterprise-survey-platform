@@ -5,11 +5,36 @@ import { useTenant } from '../../../context/TenantContext';
 import { useProjectConfigQuery, useUpdateProjectMutation } from '../api/useProjectConfigQueries';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Button } from '../../../components/ui/Button';
 
 export const LocaleManagementPage: React.FC = () => {
-  const { activeProject } = useTenant();
+  const { activeProject, projectsList, switchProject } = useTenant();
   const { data: projectConfig, isLoading, isError, refetch } = useProjectConfigQuery(activeProject?.projectId);
   const updateProjectMutation = useUpdateProjectMutation();
+
+  if (!activeProject?.projectId) {
+    return (
+      <div>
+        <PageHeader title="Locales & Multilingual Management" subtitle="Configure supported survey languages and default system fallback" />
+        <EmptyState
+          title="No Active Project Workspace Selected"
+          description="Select an active enterprise project workspace tenant to manage supported language packs and default system fallback locale."
+          action={
+            projectsList.length > 0 ? (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {projectsList.slice(0, 3).map((p) => (
+                  <Button key={p.projectId} variant="outline" size="sm" onClick={() => switchProject(p.projectId)}>
+                    Select {p.branding?.companyName || p.projectId}
+                  </Button>
+                ))}
+              </div>
+            ) : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

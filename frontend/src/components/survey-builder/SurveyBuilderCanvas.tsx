@@ -11,6 +11,9 @@ import {
   usePublishSurveyMutation,
   useCreateNewVersionMutation,
   useAnalyzeBiasMutation,
+  useTranslateTextMutation,
+  useQuestionLibraryQuery,
+  useCreateQuestionTemplateMutation,
 } from '../../features/survey-builder/api/useSurveyQueries';
 import { SurveyLogicSimulatorModal } from './SurveyLogicSimulatorModal';
 import { Card } from '../ui/Card';
@@ -33,6 +36,7 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
   surveyId,
 }) => {
   const { data: surveyData, isLoading, isError, refetch } = useSurveyQuery(surveyId, projectId);
+  const { data: libraryItems = [] } = useQuestionLibraryQuery();
 
   const saveDraftMutation = useSaveDraftMutation();
   const publishMutation = usePublishSurveyMutation();
@@ -181,6 +185,40 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
     );
   };
 
+  const translateMutation = useTranslateTextMutation();
+  const createTemplateMutation = useCreateQuestionTemplateMutation();
+
+  const handleAutoTranslate = () => {
+    if (!activeQuestion) return;
+    const sourceText = activeQuestion.prompt['en-US'] || activeQuestion.prompt[activeLocale] || '';
+    if (!sourceText) return;
+
+    translateMutation.mutate(
+      { sourceText, targetLocales: ['si-LK', 'ta-LK'], sourceLocale: 'en-US' },
+      {
+        onSuccess: (res) => {
+          if (res && res.translations) {
+            const updatedPrompt = {
+              ...activeQuestion.prompt,
+              ...res.translations,
+            };
+            updateActiveQuestion('prompt', updatedPrompt);
+          }
+        },
+      }
+    );
+  };
+
+  const handleSaveToLibrary = () => {
+    if (!activeQuestion) return;
+    createTemplateMutation.mutate({
+      category: 'ENGAGEMENT',
+      themeGroup: activeQuestion.groupId || 'GRP-GENERAL',
+      defaultPrompt: activeQuestion.prompt,
+      questionType: activeQuestion.type,
+    });
+  };
+
   if (isLoading) {
     return (
       <Card variant="bordered" padding="24px">
@@ -304,11 +342,12 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => {
+                              const firstItem = libraryItems.length > 0 ? libraryItems[0] : null;
                               const libraryTemplate: SurveyQuestion = {
                                 questionId: `Q-LIB-${Date.now().toString().slice(-4)}`,
-                                type: 'LIKERT',
-                                groupId: 'GRP-WELLBEING',
-                                prompt: {
+                                type: firstItem ? firstItem.questionType : 'LIKERT',
+                                groupId: firstItem ? firstItem.themeGroup : 'GRP-WELLBEING',
+                                prompt: firstItem ? firstItem.defaultPrompt : {
                                   'en-US': 'My workload allows me to maintain a healthy work-life balance.',
                                   'si-LK': 'මගේ වැඩ ප්‍රමාණය මට සෞඛ්‍ය සම්පන්න වැඩ-ජීවිත සමබරතාවයක් පවත්වා ගැනීමට ඉඩ සලසයි.',
                                   'ta-LK': 'எனது பணிச்சுமை எனக்கு ஆரோக்கியமான பணி-வாழ்க்கை சமநிலையை பராமரிக்க அனுமதிக்கிறது.',
@@ -538,14 +577,35 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                 )}
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAnalyzeBias}
-                isLoading={biasMutation.isPending}
-              >
-                🤖 Analyze Question Bias with AI
-              </Button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoTranslate}
+                  isLoading={translateMutation.isPending}
+                  disabled={isPublished}
+                >
+                  🌐 AI Multi-Language Auto-Translate (si-LK, ta-LK)
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAnalyzeBias}
+                  isLoading={biasMutation.isPending}
+                >
+                  🤖 Analyze Question Bias with AI
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSaveToLibrary}
+                  isLoading={createTemplateMutation.isPending}
+                >
+                  💾 Save Question to Library Catalog
+                </Button>
+              </div>
 
               {biasResult && (
                 <Alert

@@ -29,9 +29,34 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
     { tag: 'es-ES', name: 'Spanish (Spain)' },
   ];
 
+  const BCP47_LABELS: Record<string, string> = {
+    'en-US': 'English (United States)',
+    'si-LK': 'Sinhala (Sri Lanka)',
+    'ta-LK': 'Tamil (Sri Lanka)',
+    'fr-FR': 'French (France)',
+    'de-DE': 'German (Germany)',
+    'ja-JP': 'Japanese (Japan)',
+    'es-ES': 'Spanish (Spain)',
+    'zh-CN': 'Chinese (Simplified)',
+    'ar-SA': 'Arabic (Saudi Arabia)',
+    'pt-BR': 'Portuguese (Brazil)',
+  };
+
+  const getLocaleDisplayName = (tag: string) => {
+    return BCP47_LABELS[tag] ? `${tag} — ${BCP47_LABELS[tag]}` : tag;
+  };
+
   const handleAddLocale = (tagToAdd?: string) => {
     const tag = (tagToAdd || newLocaleTag).trim();
     if (!tag) return;
+
+    // BCP 47 Regex Validation
+    const bcp47Regex = /^[a-z]{2}(-[A-Z0-9]{2,4})?$/i;
+    if (!bcp47Regex.test(tag)) {
+      setValidationError(`Invalid BCP 47 language tag format '${tag}' (e.g. en-US, si-LK, fr-FR).`);
+      return;
+    }
+
     if (supportedLocales.includes(tag)) {
       setValidationError(`Locale '${tag}' is already present in supported locales.`);
       return;
@@ -126,11 +151,11 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
                   background: isDefault ? '#eff6ff' : '#f8fafc',
                   border: `1.5px solid ${isDefault ? '#3b82f6' : '#cbd5e1'}`,
                   fontWeight: 600,
-                  fontSize: '0.9rem',
+                  fontSize: '0.85rem',
                   color: isDefault ? '#1d4ed8' : '#334155',
                 }}
               >
-                <span>{locale}</span>
+                <span>{getLocaleDisplayName(locale)}</span>
                 {isDefault && (
                   <span style={{ fontSize: '0.7rem', background: '#2563eb', color: '#ffffff', padding: '1px 6px', borderRadius: '8px' }}>
                     DEFAULT
@@ -217,7 +242,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
                 onChange={() => handleSetDefault(locale)}
                 style={{ width: '18px', height: '18px' }}
               />
-              <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>{locale}</span>
+              <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>{getLocaleDisplayName(locale)}</span>
               {locale === defaultLocale && (
                 <span style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 500 }}>
                   (Primary language for unauthenticated surveys and system notifications)

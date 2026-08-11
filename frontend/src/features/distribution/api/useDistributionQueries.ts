@@ -8,6 +8,15 @@ import {
 } from '../../../types/distribution';
 import { useToast } from '../../../context/ToastContext';
 
+export function useCampaignsQuery(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['campaigns', projectId],
+    queryFn: () => distributionApi.getCampaigns(projectId),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useCampaignQuery(campaignId: string | undefined, projectId: string | undefined) {
   return useQuery({
     queryKey: ['campaign', projectId, campaignId],
@@ -26,6 +35,7 @@ export function useCreateCampaignMutation() {
     onSuccess: (data) => {
       showSuccess(`Survey Campaign ${data.campaignId} launched successfully!`);
       queryClient.setQueryData(['campaign', data.projectId, data.campaignId], data);
+      queryClient.invalidateQueries({ queryKey: ['campaigns', data.projectId] });
     },
     onError: (err: any) => {
       showError(err.message || 'Failed to launch survey campaign.');

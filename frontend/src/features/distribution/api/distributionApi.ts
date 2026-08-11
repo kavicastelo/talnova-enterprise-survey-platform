@@ -16,6 +16,12 @@ export const distributionApi = {
     return res.data;
   },
 
+  async getCampaigns(projectId?: string): Promise<CampaignResponse[]> {
+    const params = projectId ? { projectId } : undefined;
+    const res = await apiClient.get<ApiResponse<CampaignResponse[]>>('/campaigns', { params });
+    return res.data;
+  },
+
   async getCampaign(campaignId: string, projectId?: string): Promise<CampaignResponse> {
     const params = projectId ? { projectId } : undefined;
     const res = await apiClient.get<ApiResponse<CampaignResponse>>(`/campaigns/${campaignId}`, { params });

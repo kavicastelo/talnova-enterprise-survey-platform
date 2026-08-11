@@ -45,11 +45,11 @@ export const CampaignMetricsCard: React.FC<Props> = ({ campaignId, projectId = '
     );
   }
 
-  const totalTargeted = campaign.metrics?.totalTargeted ?? 1500;
-  const totalDispatched = campaign.metrics?.sent ?? campaign.metrics?.totalDispatched ?? 1480;
-  const totalCompleted = campaign.metrics?.completed ?? campaign.metrics?.totalCompleted ?? 920;
+  const totalTargeted = campaign.metrics?.totalTargeted ?? 0;
+  const totalDispatched = campaign.metrics?.sent ?? campaign.metrics?.totalDispatched ?? 0;
+  const totalCompleted = campaign.metrics?.completed ?? campaign.metrics?.totalCompleted ?? 0;
   const responseRate = totalTargeted > 0 ? ((totalCompleted / totalTargeted) * 100).toFixed(1) : '0.0';
-  const bounceRate = totalTargeted > 0 ? (((campaign.metrics?.bounced ?? 12) / totalTargeted) * 100).toFixed(1) : '0.0';
+  const bounceRate = totalTargeted > 0 ? (((campaign.metrics?.bounced ?? 0) / totalTargeted) * 100).toFixed(1) : '0.0';
 
   return (
     <Card variant="bordered" padding="24px">

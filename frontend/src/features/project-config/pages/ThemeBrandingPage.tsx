@@ -5,12 +5,40 @@ import { useTenant } from '../../../context/TenantContext';
 import { useProjectConfigQuery, useUpdateProjectMutation } from '../api/useProjectConfigQueries';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Button } from '../../../components/ui/Button';
 import { Branding } from '../../../types/projectConfig';
 
 export const ThemeBrandingPage: React.FC = () => {
-  const { activeProject, updateBranding } = useTenant();
+  const { activeProject, projectsList, switchProject, updateBranding } = useTenant();
   const { data: projectConfig, isLoading, isError, refetch } = useProjectConfigQuery(activeProject?.projectId);
   const updateProjectMutation = useUpdateProjectMutation();
+
+  if (!activeProject?.projectId) {
+    return (
+      <div>
+        <PageHeader
+          title="White-Label Brand & Accessibility Studio"
+          subtitle="Configure company logos, brand theme colors, and WCAG 2.1 AA accessibility"
+        />
+        <EmptyState
+          title="No Active Project Workspace Selected"
+          description="Select an active enterprise project workspace tenant to customize white-label theme colors and logo branding."
+          action={
+            projectsList.length > 0 ? (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {projectsList.slice(0, 3).map((p) => (
+                  <Button key={p.projectId} variant="outline" size="sm" onClick={() => switchProject(p.projectId)}>
+                    Select {p.branding?.companyName || p.projectId}
+                  </Button>
+                ))}
+              </div>
+            ) : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

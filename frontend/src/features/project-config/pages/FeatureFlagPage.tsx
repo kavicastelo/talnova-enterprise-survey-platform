@@ -5,10 +5,35 @@ import { useTenant } from '../../../context/TenantContext';
 import { useProjectConfigQuery } from '../api/useProjectConfigQueries';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Button } from '../../../components/ui/Button';
 
 export const FeatureFlagPage: React.FC = () => {
-  const { activeProject, updateFeatureFlags } = useTenant();
+  const { activeProject, projectsList, switchProject, updateFeatureFlags } = useTenant();
   const { data: projectConfig, isLoading, isError, refetch } = useProjectConfigQuery(activeProject?.projectId);
+
+  if (!activeProject?.projectId) {
+    return (
+      <div>
+        <PageHeader title="Feature Flag Matrix" subtitle="Manage tenant module subscription feature flags" />
+        <EmptyState
+          title="No Active Project Workspace Selected"
+          description="Select an active enterprise project workspace tenant to view and manage module subscription feature flags."
+          action={
+            projectsList.length > 0 ? (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {projectsList.slice(0, 3).map((p) => (
+                  <Button key={p.projectId} variant="outline" size="sm" onClick={() => switchProject(p.projectId)}>
+                    Select {p.branding?.companyName || p.projectId}
+                  </Button>
+                ))}
+              </div>
+            ) : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

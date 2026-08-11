@@ -18,6 +18,7 @@ export interface DataTableProps<T> {
   isLoading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: React.ReactNode;
   pagination?: PaginationProps;
   onRowClick?: (row: T) => void;
 }
@@ -29,6 +30,7 @@ export function DataTable<T>({
   isLoading = false,
   emptyTitle = 'No records found',
   emptyDescription = 'There are no items matching your criteria in this dataset.',
+  emptyAction,
   pagination,
   onRowClick,
 }: DataTableProps<T>) {
@@ -71,7 +73,7 @@ export function DataTable<T>({
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} style={{ padding: '24px' }}>
-                  <EmptyState title={emptyTitle} description={emptyDescription} />
+                  <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
                 </td>
               </tr>
             ) : (

@@ -5,7 +5,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
-import { CampaignMetricsCard } from '../../../components/distribution/CampaignMetricsCard';
+import { LiveCampaignMonitor } from '../../../components/distribution/LiveCampaignMonitor';
 import { CampaignLaunchWizard } from '../../../components/distribution/CampaignLaunchWizard';
 import { useTenant } from '../../../context/TenantContext';
 import { useGenerateTokensMutation } from '../api/useDistributionQueries';
@@ -16,8 +16,8 @@ export const DistributionStudioPage: React.FC = () => {
 
   // Token Generator Form State
   const [tokenForm, setTokenForm] = useState({
-    campaignId: 'CMP-77102',
-    surveyId: 'SUR-88102',
+    campaignId: 'CMP-1001',
+    surveyId: 'SRV-5001',
     anonymityLevel: 'SEMI_ANONYMOUS' as const,
     count: 100,
     generateKioskPin: true,
@@ -55,9 +55,9 @@ export const DistributionStudioPage: React.FC = () => {
       <div style={{ marginTop: '20px' }}>
         {activeTab === 'campaigns' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <CampaignMetricsCard
-              campaignId="CMP-77102"
+            <LiveCampaignMonitor
               projectId={activeProject?.projectId || 'PRJ-99201'}
+              onLaunchNew={() => setActiveTab('wizard')}
             />
           </div>
         )}
@@ -65,7 +65,7 @@ export const DistributionStudioPage: React.FC = () => {
         {activeTab === 'wizard' && (
           <CampaignLaunchWizard
             projectId={activeProject?.projectId || 'PRJ-99201'}
-            surveyId="SUR-88102"
+            surveyId="SRV-5001"
             surveyTitle="2026 Employee Engagement Pulse"
             onLaunchComplete={() => setActiveTab('campaigns')}
           />
