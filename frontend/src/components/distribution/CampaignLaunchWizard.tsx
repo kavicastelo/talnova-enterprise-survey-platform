@@ -214,7 +214,7 @@ export const CampaignLaunchWizard: React.FC<Props> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', color: '#334155', marginBottom: '8px' }}>
-                Distribution Channels
+                Distribution Channels (At least 1 required - VR-DST-004)
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {[
@@ -236,14 +236,26 @@ export const CampaignLaunchWizard: React.FC<Props> = ({
                   </Button>
                 ))}
               </div>
+              {selectedChannels.length === 0 && (
+                <p style={{ color: '#dc2626', fontSize: '0.75rem', marginTop: '4px' }}>
+                  ⚠️ VR-DST-004: Select at least one distribution channel to launch the campaign.
+                </p>
+              )}
             </div>
 
-            <Input
-              label="Expiration Date"
-              type="datetime-local"
-              value={expirationDate}
-              onChange={(e) => setExpirationDate(e.target.value)}
-            />
+            <div>
+              <Input
+                label="Expiration Date (Must be at least 24h in future - VR-DST-003)"
+                type="datetime-local"
+                value={expirationDate}
+                onChange={(e) => setExpirationDate(e.target.value)}
+              />
+              {new Date(expirationDate).getTime() < Date.now() + 24 * 3600 * 1000 && (
+                <p style={{ color: '#dc2626', fontSize: '0.75rem', marginTop: '4px' }}>
+                  ⚠️ VR-DST-003: Campaign expiration date must be at least 24 hours in the future.
+                </p>
+              )}
+            </div>
 
             <Input
               label="Reminder Nudge Interval (Days)"

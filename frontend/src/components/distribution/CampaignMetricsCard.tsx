@@ -1,6 +1,10 @@
 import React from 'react';
 import { CampaignStatus } from '../../types/distribution';
-import { useCampaignQuery, useUpdateCampaignStatusMutation } from '../../features/distribution/api/useDistributionQueries';
+import {
+  useCampaignQuery,
+  useUpdateCampaignStatusMutation,
+  useTriggerRemindersMutation,
+} from '../../features/distribution/api/useDistributionQueries';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -15,6 +19,7 @@ interface Props {
 export const CampaignMetricsCard: React.FC<Props> = ({ campaignId, projectId = 'PRJ-99201' }) => {
   const { data: campaign, isLoading, isError, refetch } = useCampaignQuery(campaignId, projectId);
   const statusMutation = useUpdateCampaignStatusMutation();
+  const reminderMutation = useTriggerRemindersMutation();
 
   const handleStatusChange = (newStatus: CampaignStatus) => {
     statusMutation.mutate({ campaignId, status: newStatus, projectId });
@@ -78,14 +83,24 @@ export const CampaignMetricsCard: React.FC<Props> = ({ campaignId, projectId = '
 
           <div style={{ display: 'flex', gap: '8px' }}>
             {campaign.status === 'ACTIVE' && (
-              <Button
-                variant="secondary"
-                size="sm"
-                isLoading={statusMutation.isPending}
-                onClick={() => handleStatusChange('PAUSED')}
-              >
-                ⏸ Pause Campaign
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  isLoading={reminderMutation.isPending}
+                  onClick={() => reminderMutation.mutate({ campaignId, projectId })}
+                >
+                  🔔 Remind Non-Respondents
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  isLoading={statusMutation.isPending}
+                  onClick={() => handleStatusChange('PAUSED')}
+                >
+                  ⏸ Pause Campaign
+                </Button>
+              </>
             )}
             {campaign.status === 'PAUSED' && (
               <Button
