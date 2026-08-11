@@ -11,8 +11,8 @@ export const SurveyBuilderPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Metadata-Driven Survey Builder Studio"
-        subtitle={`Design questionnaire Abstract Syntax Trees (AST), logic branching rules, and AI bias detection for ${activeProject?.projectId || 'Active Project'}`}
+        title="Survey Questionnaire Builder Studio"
+        subtitle="Construct multi-page surveys, configure branching logic rules, and manage engagement dimensions."
       />
       <SurveyBuilderCanvas projectId={activeProject?.projectId || ''} surveyId={surveyId} />
     </div>
