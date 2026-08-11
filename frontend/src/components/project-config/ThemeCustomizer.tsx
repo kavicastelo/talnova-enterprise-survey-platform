@@ -9,27 +9,29 @@ import { Alert } from '../ui/Alert';
 
 interface Props {
   branding: Branding;
-  onChange?: (updated: Branding) => void;
+  onSave?: (updated: Branding) => void;
+  isSaving?: boolean;
 }
 
-export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
+export const ThemeCustomizer: React.FC<Props> = ({ branding, onSave, isSaving }) => {
   const [primaryColor, setPrimaryColor] = useState(branding.primaryColor || '#1E3A8A');
   const [secondaryColor, setSecondaryColor] = useState(branding.secondaryColor || '#3B82F6');
   const [companyName, setCompanyName] = useState(branding.companyName || 'Aitken Spence PLC');
   const [logoUrl, setLogoUrl] = useState(branding.logoUrl || '');
+  const [customCssUrl, setCustomCssUrl] = useState(branding.customCssUrl || '');
   const [validationResult, setValidationResult] = useState<ContrastValidationResponse | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const validateMutation = useValidateThemeMutation();
 
-  const handleColorChange = (newPrimary: string, newSecondary: string) => {
-    setPrimaryColor(newPrimary);
-    setSecondaryColor(newSecondary);
-    if (onChange) {
-      onChange({ companyName, logoUrl, primaryColor: newPrimary, secondaryColor: newSecondary });
-    }
-  };
-
   const handleValidateAccessibility = () => {
+    setValidationError(null);
+    const hexRegex = /^#([A-Fa-f0-9]{6})$/;
+    if (!hexRegex.test(primaryColor)) {
+      setValidationError('Primary color must be a valid 6-character HEX format (e.g. #1E3A8A).');
+      return;
+    }
+
     validateMutation.mutate(
       { primaryColor, backgroundColor: '#FFFFFF' },
       {
@@ -40,6 +42,37 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
     );
   };
 
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+
+    // VR-CFG-002: HEX Format check
+    const hexRegex = /^#([A-Fa-f0-9]{6})$/;
+    if (!hexRegex.test(primaryColor)) {
+      setValidationError('Primary Color must be a valid HEX color string matching ^#([A-Fa-f0-9]{6})$ (VR-CFG-002).');
+      return;
+    }
+    if (!hexRegex.test(secondaryColor)) {
+      setValidationError('Secondary Color must be a valid HEX color string matching ^#([A-Fa-f0-9]{6})$ (VR-CFG-002).');
+      return;
+    }
+
+    if (!companyName.trim()) {
+      setValidationError('Company Brand Name is required.');
+      return;
+    }
+
+    if (onSave) {
+      onSave({
+        companyName,
+        logoUrl,
+        primaryColor,
+        secondaryColor,
+        customCssUrl,
+      });
+    }
+  };
+
   return (
     <Card variant="bordered" padding="24px">
       <div style={{ marginBottom: '20px' }}>
@@ -47,73 +80,91 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
           White-Label Brand & Accessibility Studio
         </h3>
         <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
-          Customize company primary/secondary theme colors and calculate WCAG 2.1 contrast ratio against white background.
+          Customize company primary/secondary theme colors and calculate WCAG 2.1 contrast ratio against light enterprise background.
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+      {validationError && (
+        <Alert type="error" title="Validation Error" style={{ marginBottom: '16px' }}>
+          {validationError}
+        </Alert>
+      )}
+
+      <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         {/* Controls Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
             label="Company Brand Name"
             value={companyName}
-            onChange={(e) => {
-              setCompanyName(e.target.value);
-              if (onChange) onChange({ companyName: e.target.value, logoUrl, primaryColor, secondaryColor });
-            }}
+            onChange={(e) => setCompanyName(e.target.value)}
+            required
           />
 
           <Input
-            label="Brand Logo URL (HTTPS)"
+            label="Brand Logo URL (HTTPS VR-CFG-003)"
             value={logoUrl}
-            onChange={(e) => {
-              setLogoUrl(e.target.value);
-              if (onChange) onChange({ companyName, logoUrl: e.target.value, primaryColor, secondaryColor });
-            }}
+            onChange={(e) => setLogoUrl(e.target.value)}
             placeholder="https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png"
           />
 
           <div style={{ display: 'flex', gap: '16px' }}>
             <div style={{ flex: 1 }}>
               <Input
-                label="Primary Color"
+                label="Primary Color (VR-CFG-002)"
                 type="color"
                 value={primaryColor}
-                onChange={(e) => handleColorChange(e.target.value, secondaryColor)}
+                onChange={(e) => setPrimaryColor(e.target.value)}
               />
             </div>
             <div style={{ flex: 1 }}>
               <Input
-                label="Secondary Color"
+                label="Secondary Color (VR-CFG-002)"
                 type="color"
                 value={secondaryColor}
-                onChange={(e) => handleColorChange(primaryColor, e.target.value)}
+                onChange={(e) => setSecondaryColor(e.target.value)}
               />
             </div>
           </div>
 
-          <Button variant="outline" onClick={handleValidateAccessibility} isLoading={validateMutation.isPending}>
-            🔍 Run WCAG Accessibility Audit
-          </Button>
+          <Input
+            label="Custom CSS Sandbox URL (Optional)"
+            value={customCssUrl}
+            onChange={(e) => setCustomCssUrl(e.target.value)}
+            placeholder="https://cdn.enterprise.com/custom-theme.css"
+          />
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <Button type="button" variant="outline" onClick={handleValidateAccessibility} isLoading={validateMutation.isPending}>
+              🔍 Audit WCAG Contrast Ratio
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isSaving}>
+              Save Branding Settings
+            </Button>
+          </div>
         </div>
 
-        {/* Live Preview & Accessibility Card */}
+        {/* Live Preview Card */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             style={{
               padding: '24px',
               borderRadius: '12px',
-              background: '#f8fafc',
+              background: '#ffffff',
               border: '1px solid #e2e8f0',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
             }}
           >
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', margin: 0 }}>
-              LIVE BRAND PREVIEW
-            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: 0 }}>
+                LIVE ENTERPRISE PREVIEW
+              </h4>
+              <Badge variant="indigo">White-Label</Badge>
+            </div>
 
+            {/* Header bar preview */}
             <div
               style={{
                 padding: '16px',
@@ -127,7 +178,16 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
                 justifyContent: 'space-between',
               }}
             >
-              <span>{companyName || 'Company Name'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ height: '24px', objectFit: 'contain' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
+                ) : (
+                  <div style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                    🏢
+                  </div>
+                )}
+                <span>{companyName || 'Company Name'}</span>
+              </div>
               <div
                 style={{
                   padding: '6px 12px',
@@ -135,10 +195,21 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
                   background: secondaryColor,
                   color: '#ffffff',
                   fontSize: '0.8rem',
+                  fontWeight: 600,
                 }}
               >
-                Secondary Action
+                Action Button
               </div>
+            </div>
+
+            {/* Sample Card */}
+            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                Sample Employee Pulse Survey Header
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+                This is a live preview of how employee survey portals and executive PDF exports will render.
+              </p>
             </div>
           </div>
 
@@ -156,7 +227,7 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onChange }) => {
             </Alert>
           )}
         </div>
-      </div>
+      </form>
     </Card>
   );
 };

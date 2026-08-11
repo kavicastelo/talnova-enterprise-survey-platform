@@ -1,28 +1,72 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { LocaleManagementPanel } from '../../../components/project-config/LocaleManagementPanel';
 import { useTenant } from '../../../context/TenantContext';
+import { useProjectConfigQuery, useUpdateProjectMutation } from '../api/useProjectConfigQueries';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { ErrorState } from '../../../components/ui/ErrorState';
 
 export const LocaleManagementPage: React.FC = () => {
   const { activeProject } = useTenant();
-  const [supportedLocales, setSupportedLocales] = useState<string[]>(
-    activeProject?.supportedLocales || ['en-US', 'si-LK', 'ta-LK']
-  );
-  const [defaultLocale, setDefaultLocale] = useState<string>(activeProject?.defaultLocale || 'en-US');
+  const { data: projectConfig, isLoading, isError, refetch } = useProjectConfigQuery(activeProject?.projectId);
+  const updateProjectMutation = useUpdateProjectMutation();
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Locales & Multilingual Management" subtitle="Loading locale configuration..." />
+        <Skeleton height="300px" borderRadius="12px" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <PageHeader title="Locales & Multilingual Management" />
+        <ErrorState
+          title="Failed to Load Locales"
+          message="Could not retrieve locale configurations from project-config-service."
+          onRetry={refetch}
+        />
+      </div>
+    );
+  }
+
+  const supportedLocales = projectConfig?.supportedLocales || activeProject?.supportedLocales || ['en-US', 'si-LK', 'ta-LK'];
+  const defaultLocale = projectConfig?.defaultLocale || activeProject?.defaultLocale || 'en-US';
+
+  const handleSaveLocales = (newSupportedLocales: string[], newDefaultLocale: string) => {
+    if (!activeProject?.projectId) return;
+
+    const payload = {
+      projectId: activeProject.projectId,
+      name: projectConfig?.name || activeProject.name || activeProject.projectName,
+      branding: projectConfig?.branding || activeProject.branding,
+      supportedLocales: newSupportedLocales,
+      defaultLocale: newDefaultLocale,
+      features: projectConfig?.features || activeProject.features,
+      customAttributeDefinitions: projectConfig?.customAttributeDefinitions,
+    };
+
+    updateProjectMutation.mutate({
+      projectId: activeProject.projectId,
+      payload,
+    });
+  };
 
   return (
     <div>
       <PageHeader
         title="Locales & Multilingual Management"
-        subtitle={`Configure supported languages and primary survey translation pack for ${activeProject?.projectId}`}
+        subtitle={`Configure supported languages and primary survey translation pack for project ${activeProject?.projectId}`}
       />
       <LocaleManagementPanel
+        key={`${supportedLocales.join(',')}-${defaultLocale}`}
         supportedLocales={supportedLocales}
         defaultLocale={defaultLocale}
-        onChange={(locales, def) => {
-          setSupportedLocales(locales);
-          setDefaultLocale(def);
-        }}
+        onSave={handleSaveLocales}
+        isSaving={updateProjectMutation.isPending}
       />
     </div>
   );

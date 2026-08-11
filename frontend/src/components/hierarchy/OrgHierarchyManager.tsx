@@ -5,6 +5,8 @@ import {
   useAnomaliesQuery,
   useCreateNodeMutation,
   useMoveNodeMutation,
+  useLineageQuery,
+  useDeleteNodeMutation,
 } from '../../features/organization/api/useOrgQueries';
 import { OrgTreeCanvas } from './OrgTreeCanvas';
 import { Card } from '../ui/Card';
@@ -12,6 +14,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Alert } from '../ui/Alert';
 import { Modal } from '../ui/Modal';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Skeleton } from '../ui/Skeleton';
@@ -24,14 +27,17 @@ interface OrgHierarchyManagerProps {
 export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projectId }) => {
   const [selectedNode, setSelectedNode] = useState<OrgNodeResponse | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [nodeToDelete, setNodeToDelete] = useState<OrgNodeResponse | null>(null);
 
   // Queries
   const { data: nodes = [], isLoading, isError, refetch } = useSubtreeQuery('N-001', projectId);
   const { data: anomalyReport } = useAnomaliesQuery(projectId);
+  const { data: lineageNodes = [], isLoading: isLineageLoading } = useLineageQuery(selectedNode?.nodeId, projectId);
 
   // Mutations
   const createMutation = useCreateNodeMutation();
   const moveMutation = useMoveNodeMutation();
+  const deleteMutation = useDeleteNodeMutation();
 
   // Move Modal State
   const [moveModalState, setMoveModalState] = useState<{
@@ -41,6 +47,7 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
 
   // Create Node Modal State
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [newNodeForm, setNewNodeForm] = useState<{
     nodeId: string;
     name: string;
@@ -59,9 +66,9 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
 
     if (!draggedNode || !targetParent) return;
 
-    // Cycle prevention check
-    if (targetParent.path.includes(`,${draggedNodeId},`)) {
-      setStatusMessage(`⚠️ Circular Move Blocked: Target parent '${targetParent.name}' is a descendant of '${draggedNode.name}'.`);
+    // VR-ORG-004: Cycle prevention check
+    if (targetParent.path.includes(`,${draggedNodeId},`) || targetParent.nodeId === draggedNodeId) {
+      setStatusMessage(`⚠️ Circular Move Blocked (VR-ORG-004): Target parent '${targetParent.name}' is a descendant of '${draggedNode.name}'.`);
       return;
     }
 
@@ -83,8 +90,45 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
     );
   };
 
+  const handleDeleteAttempt = (node: OrgNodeResponse) => {
+    // FR-ORG-006: Deletion Integrity Guard Check
+    const hasChildren = nodes.some((n) => n.parentId === node.nodeId);
+    if (hasChildren) {
+      setStatusMessage(`⚠️ Deletion Blocked (FR-ORG-006): Node '${node.name}' (${node.nodeId}) contains active child nodes. Re-parent or delete child nodes first.`);
+      return;
+    }
+    setNodeToDelete(node);
+  };
+
+  const confirmDelete = () => {
+    if (!nodeToDelete) return;
+    deleteMutation.mutate(
+      { nodeId: nodeToDelete.nodeId, projectId },
+      {
+        onSuccess: () => {
+          setSelectedNode(null);
+          setNodeToDelete(null);
+        },
+      }
+    );
+  };
+
   const handleCreateNodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+
+    // VR-ORG-001: Node ID regex validation
+    const nodeRegex = /^N-[A-Za-z0-9_-]{3,20}$/;
+    if (!nodeRegex.test(newNodeForm.nodeId.trim())) {
+      setValidationError('Node ID must match pattern ^N-[A-Za-z0-9_-]{3,20}$ (VR-ORG-001, e.g. N-301).');
+      return;
+    }
+
+    if (!newNodeForm.name.trim()) {
+      setValidationError('Node Name is required.');
+      return;
+    }
+
     const payload: CreateNodeRequest = {
       projectId,
       nodeId: newNodeForm.nodeId.trim(),
@@ -97,6 +141,9 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
       onSuccess: () => {
         setShowCreateModal(false);
         setNewNodeForm({ nodeId: '', name: '', type: 'DEPARTMENT', parentId: '' });
+      },
+      onError: (err: any) => {
+        setValidationError(err.message || 'Failed to create organization node.');
       },
     });
   };
@@ -133,7 +180,7 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
             Manage reporting trees, materialized path lineage, and atomic drag-and-drop re-parenting.
           </p>
         </div>
-        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+        <Button variant="primary" onClick={() => { setValidationError(null); setShowCreateModal(true); }}>
           + Add New Node
         </Button>
       </div>
@@ -148,19 +195,53 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
         </Alert>
       )}
 
-      {/* Selected Node Details Card */}
+      {/* Selected Node Details Card & Ancestor Lineage Breadcrumb (FR-ORG-005) */}
       {selectedNode && (
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Badge variant="info">SELECTED NODE</Badge>
-            <h4 style={{ margin: '6px 0 2px 0', fontSize: '1.1rem', color: '#1e3a8a' }}>{selectedNode.name} ({selectedNode.nodeId})</h4>
-            <div style={{ fontSize: '0.85rem', color: '#3b82f6' }}>
-              Type: {selectedNode.type} | Depth: {selectedNode.depth} | Path: <code>{selectedNode.path}</code>
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Badge variant="indigo">SELECTED NODE</Badge>
+              <h4 style={{ margin: 0, fontSize: '1.15rem', color: '#1e3a8a', fontWeight: 800 }}>{selectedNode.name}</h4>
+              <code style={{ fontSize: '0.8rem', color: '#1d4ed8', background: '#dbeafe', padding: '2px 6px', borderRadius: '4px' }}>{selectedNode.nodeId}</code>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="danger" size="sm" onClick={() => handleDeleteAttempt(selectedNode)}>
+                Delete Node (FR-ORG-006)
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setSelectedNode(null)}>
+                Clear Selection
+              </Button>
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => setSelectedNode(null)}>
-            Clear Selection
-          </Button>
+
+          {/* Ancestor Lineage Path (FR-ORG-005) */}
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '8px', border: '1px solid #dbeafe' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+              ANCESTOR LINEAGE PATH (FR-ORG-005)
+            </div>
+            {isLineageLoading ? (
+              <Skeleton height="24px" borderRadius="4px" />
+            ) : lineageNodes.length > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '0.875rem' }}>
+                {lineageNodes.map((ancestor, index) => (
+                  <React.Fragment key={ancestor.nodeId}>
+                    <span style={{ fontWeight: ancestor.nodeId === selectedNode.nodeId ? 700 : 500, color: ancestor.nodeId === selectedNode.nodeId ? '#1d4ed8' : '#334155' }}>
+                      {ancestor.name} ({ancestor.type})
+                    </span>
+                    {index < lineageNodes.length - 1 && <span style={{ color: '#94a3b8' }}>→</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <code style={{ fontSize: '0.85rem', color: '#3b82f6' }}>{selectedNode.path}</code>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: '#3b82f6' }}>
+            <span>Type: <strong>{selectedNode.type}</strong></span>
+            <span>Depth: <strong>Level {selectedNode.depth}</strong></span>
+            <span>Materialized Path: <code>{selectedNode.path}</code></span>
+          </div>
         </div>
       )}
 
@@ -180,6 +261,17 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
         nodes={nodes}
         onSelectNode={(n) => setSelectedNode(n)}
         onMoveNodeAttempt={handleMoveAttempt}
+      />
+
+      {/* Confirm Soft Delete Modal */}
+      <ConfirmDialog
+        isOpen={!!nodeToDelete}
+        onClose={() => setNodeToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Confirm Soft Delete Organization Node"
+        message={`Are you sure you want to delete node ${nodeToDelete?.name} (${nodeToDelete?.nodeId})? (FR-ORG-006 Deletion Integrity Guard).`}
+        confirmText="Delete Node"
+        isLoading={deleteMutation.isPending}
       />
 
       {/* Re-parenting Move Confirmation Modal */}
@@ -213,11 +305,17 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
         <form onSubmit={handleCreateNodeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Add New Organization Node</h3>
 
+          {validationError && (
+            <Alert type="error" title="Validation Error">
+              {validationError}
+            </Alert>
+          )}
+
           <Input
-            label="Node ID (N-XXX)"
+            label="Node ID (VR-ORG-001)"
             value={newNodeForm.nodeId}
             onChange={(e) => setNewNodeForm({ ...newNodeForm, nodeId: e.target.value })}
-            placeholder="N-302"
+            placeholder="N-301"
             helperText="Must match pattern ^N-[A-Za-z0-9_-]{3,20}$"
             required
           />
@@ -231,7 +329,7 @@ export const OrgHierarchyManager: React.FC<OrgHierarchyManagerProps> = ({ projec
           />
 
           <Select
-            label="Node Type"
+            label="Node Type (VR-ORG-003)"
             value={newNodeForm.type}
             onChange={(e) => setNewNodeForm({ ...newNodeForm, type: e.target.value })}
             options={[

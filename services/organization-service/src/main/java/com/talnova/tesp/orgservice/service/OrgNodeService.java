@@ -17,4 +17,6 @@ public interface OrgNodeService {
     List<OrgNodeResponseDTO> getSubTree(String projectId, String nodeId);
 
     List<OrgNodeResponseDTO> getLineage(String projectId, String nodeId);
+
+    void deleteNode(String projectId, String nodeId);
 }

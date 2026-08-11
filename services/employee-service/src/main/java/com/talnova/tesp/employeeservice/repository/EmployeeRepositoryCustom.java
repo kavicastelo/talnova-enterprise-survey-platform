@@ -13,4 +13,6 @@ public interface EmployeeRepositoryCustom {
     List<EmployeeDocument> findActiveByNodeIdAndStatus(String projectId, String nodeId, EmployeeStatus status);
 
     List<EmployeeDocument> findActiveByMatrixNodeId(String projectId, String matrixNodeId);
+
+    List<EmployeeDocument> findAllActiveByProjectId(String projectId, String nodeId, EmployeeStatus status);
 }

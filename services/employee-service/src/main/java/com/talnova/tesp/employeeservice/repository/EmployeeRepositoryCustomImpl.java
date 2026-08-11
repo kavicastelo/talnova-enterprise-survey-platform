@@ -52,4 +52,21 @@ public class EmployeeRepositoryCustomImpl implements EmployeeRepositoryCustom {
                 .and("isDeleted").is(false));
         return mongoOperations.find(query, EmployeeDocument.class);
     }
+
+    @Override
+    public List<EmployeeDocument> findAllActiveByProjectId(String projectId, String nodeId, EmployeeStatus status) {
+        Query query = new Query();
+        Criteria criteria = Criteria.where("projectId").is(projectId)
+                .and("isDeleted").is(false);
+
+        if (nodeId != null && !nodeId.isBlank()) {
+            criteria.and("nodeId").is(nodeId);
+        }
+        if (status != null) {
+            criteria.and("status").is(status.name());
+        }
+
+        query.addCriteria(criteria);
+        return mongoOperations.find(query, EmployeeDocument.class);
+    }
 }

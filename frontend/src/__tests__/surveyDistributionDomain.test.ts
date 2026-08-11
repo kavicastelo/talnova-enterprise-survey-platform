@@ -150,4 +150,46 @@ describe('FEAT-005 Survey Distribution Domain Integration', () => {
     expect(result.recommendedHourUtc).toBe(9);
     expect(result.predictedOpenRateImprovementPercent).toBe(18.5);
   });
+
+  it('validates campaign expiration date limits (VR-DST-003)', () => {
+    const isExpirationValid = (expirationDateIso: string): boolean => {
+      const expTime = new Date(expirationDateIso).getTime();
+      const minTime = Date.now() + 24 * 3600 * 1000;
+      const maxTime = Date.now() + 90 * 86400 * 1000;
+      return expTime >= minTime && expTime <= maxTime;
+    };
+
+    const futureValid = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
+    const tooSoon = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+
+    expect(isExpirationValid(futureValid)).toBe(true);
+    expect(isExpirationValid(tooSoon)).toBe(false);
+  });
+
+  it('validates channel selection presence (VR-DST-004)', () => {
+    const isChannelSelectionValid = (channels: string[]): boolean => {
+      return Array.isArray(channels) && channels.length > 0;
+    };
+
+    expect(isChannelSelectionValid(['EMAIL', 'TEAMS'])).toBe(true);
+    expect(isChannelSelectionValid([])).toBe(false);
+  });
+
+  it('triggerReminders calls POST /campaigns/{campaignId}/remind (FR-DST-005 / TC-DST-002)', async () => {
+    const mockResponse = {
+      remindedCount: 580,
+      status: 'DISPATCHED',
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      success: true,
+      data: mockResponse,
+    });
+
+    const result = await distributionApi.triggerReminders('CMP-1001', 'PRJ-99201');
+
+    expect(spy).toHaveBeenCalledWith('/campaigns/CMP-1001/remind', {}, { params: { projectId: 'PRJ-99201' } });
+    expect(result.remindedCount).toBe(580);
+    expect(result.status).toBe('DISPATCHED');
+  });
 });

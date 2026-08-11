@@ -83,6 +83,14 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
     questionIndex: number;
   } | null>({ pageIndex: 0, sectionIndex: 0, questionIndex: 0 });
 
+  React.useEffect(() => {
+    if (surveyData) {
+      if (surveyData.title) setSurveyTitle(surveyData.title);
+      if (surveyData.pages && surveyData.pages.length > 0) setPages(surveyData.pages);
+    }
+  }, [surveyData]);
+
+
   const currentStatus = surveyData?.status || 'DRAFT';
   const currentVersion = surveyData?.version || 1;
   const isPublished = currentStatus === 'PUBLISHED';
@@ -291,9 +299,36 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                         {section.title?.[activeLocale] || 'Section'}
                       </span>
                       {!isPublished && (
-                        <Button variant="outline" size="sm" onClick={() => addQuestion(pIdx, sIdx)}>
-                          + Question
-                        </Button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const libraryTemplate: SurveyQuestion = {
+                                questionId: `Q-LIB-${Date.now().toString().slice(-4)}`,
+                                type: 'LIKERT',
+                                groupId: 'GRP-WELLBEING',
+                                prompt: {
+                                  'en-US': 'My workload allows me to maintain a healthy work-life balance.',
+                                  'si-LK': 'මගේ වැඩ ප්‍රමාණය මට සෞඛ්‍ය සම්පන්න වැඩ-ජීවිත සමබරතාවයක් පවත්වා ගැනීමට ඉඩ සලසයි.',
+                                  'ta-LK': 'எனது பணிச்சுமை எனக்கு ஆரோக்கியமான பணி-வாழ்க்கை சமநிலையை பராமரிக்க அனுமதிக்கிறது.',
+                                },
+                                isMandatory: true,
+                                questionOrder: section.questions.length + 1,
+                                logicRules: [],
+                              };
+                              const updatedPages = [...pages];
+                              updatedPages[pIdx].sections[sIdx].questions.push(libraryTemplate);
+                              setPages(updatedPages);
+                              setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: section.questions.length });
+                            }}
+                          >
+                            📚 + Library Item
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => addQuestion(pIdx, sIdx)}>
+                            + Question
+                          </Button>
+                        </div>
                       )}
                     </div>
 
@@ -357,6 +392,7 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                   { value: 'MATRIX', label: 'Matrix Grid (Quantitative)' },
                   { value: 'SINGLE_CHOICE', label: 'Single Choice' },
                   { value: 'MULTIPLE_CHOICE', label: 'Multiple Choice' },
+                  { value: 'RANKING', label: 'Ranking Scale' },
                   { value: 'SHORT_TEXT', label: 'Short Text' },
                   { value: 'LONG_TEXT', label: 'Long Text' },
                   { value: 'NUMERIC', label: 'Numeric' },
@@ -365,13 +401,20 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                 disabled={isPublished}
               />
 
-              <Input
-                label="Question Group ID"
-                value={activeQuestion.groupId || ''}
-                onChange={(e) => updateActiveQuestion('groupId', e.target.value)}
-                placeholder="GRP-LEADERSHIP"
-                disabled={isPublished}
-              />
+              <div>
+                <Input
+                  label="Question Group ID (Mandatory for Quantitative)"
+                  value={activeQuestion.groupId || ''}
+                  onChange={(e) => updateActiveQuestion('groupId', e.target.value)}
+                  placeholder="GRP-LEADERSHIP"
+                  disabled={isPublished}
+                />
+                {['LIKERT', 'NPS', 'MATRIX'].includes(activeQuestion.type) && !activeQuestion.groupId?.trim() && (
+                  <p style={{ color: '#dc2626', fontSize: '0.75rem', marginTop: '4px' }}>
+                    ⚠️ BR-SRV-002: Quantitative questions require a valid Question Group ID for analytics aggregation.
+                  </p>
+                )}
+              </div>
 
               <Textarea
                 label={`Prompt (${activeLocale})`}
@@ -383,6 +426,117 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                 }}
                 disabled={isPublished}
               />
+
+              {/* Declarative Branching Logic Rules Editor */}
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>
+                    ⚡ Branching / Skip Logic Rules ({activeQuestion.logicRules?.length || 0})
+                  </label>
+                  {!isPublished && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (!selectedQuestion) return;
+                        const currentPIdx = selectedQuestion.pageIndex;
+                        const availableTargetPages = pages.filter((_, idx) => idx > currentPIdx);
+                        if (availableTargetPages.length === 0) {
+                          alert('Forward skip rules require at least 1 subsequent page (VR-SRV-003).');
+                          return;
+                        }
+                        const newRule = {
+                          ruleId: `RULE-${Date.now().toString().slice(-4)}`,
+                          operator: 'EQUALS' as const,
+                          comparisonValue: '1',
+                          targetPageId: availableTargetPages[0].pageId,
+                        };
+                        const currentRules = activeQuestion.logicRules || [];
+                        updateActiveQuestion('logicRules', [...currentRules, newRule]);
+                      }}
+                    >
+                      + Add Rule
+                    </Button>
+                  )}
+                </div>
+
+                {(!activeQuestion.logicRules || activeQuestion.logicRules.length === 0) ? (
+                  <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0 }}>
+                    No logic rules configured for this question. Sequential navigation will apply.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activeQuestion.logicRules.map((rule, rIdx) => {
+                      const currentPIdx = selectedQuestion?.pageIndex ?? 0;
+                      const validTargetPages = pages.filter((_, idx) => idx > currentPIdx);
+
+                      return (
+                        <div
+                          key={rule.ruleId || rIdx}
+                          style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px', fontSize: '0.8rem' }}
+                        >
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                            <Select
+                              value={rule.operator}
+                              onChange={(e) => {
+                                const updatedRules = [...(activeQuestion.logicRules || [])];
+                                updatedRules[rIdx] = { ...rule, operator: e.target.value as any };
+                                updateActiveQuestion('logicRules', updatedRules);
+                              }}
+                              options={[
+                                { value: 'EQUALS', label: 'IF Equals' },
+                                { value: 'NOT_EQUALS', label: 'IF Not Equals' },
+                                { value: 'LESS_THAN', label: 'IF Less Than' },
+                                { value: 'GREATER_THAN', label: 'IF Greater Than' },
+                              ]}
+                              disabled={isPublished}
+                            />
+                            <Input
+                              value={rule.comparisonValue}
+                              onChange={(e) => {
+                                const updatedRules = [...(activeQuestion.logicRules || [])];
+                                updatedRules[rIdx] = { ...rule, comparisonValue: e.target.value };
+                                updateActiveQuestion('logicRules', updatedRules);
+                              }}
+                              placeholder="Value (e.g. 7)"
+                              disabled={isPublished}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>SKIP TO:</span>
+                            <Select
+                              value={rule.targetPageId}
+                              onChange={(e) => {
+                                const updatedRules = [...(activeQuestion.logicRules || [])];
+                                updatedRules[rIdx] = { ...rule, targetPageId: e.target.value };
+                                updateActiveQuestion('logicRules', updatedRules);
+                              }}
+                              options={validTargetPages.map((p) => ({
+                                value: p.pageId,
+                                label: `Page ${p.pageOrder}: ${p.title?.[activeLocale] || p.title?.['en-US'] || p.pageId}`,
+                              }))}
+                              disabled={isPublished}
+                            />
+                            {!isPublished && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const updatedRules = (activeQuestion.logicRules || []).filter((_, idx) => idx !== rIdx);
+                                  updateActiveQuestion('logicRules', updatedRules);
+                                }}
+                              >
+                                ✕
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               <Button
                 variant="outline"

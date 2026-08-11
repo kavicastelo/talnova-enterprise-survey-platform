@@ -74,3 +74,21 @@ export function useMoveNodeMutation() {
     },
   });
 }
+
+export function useDeleteNodeMutation() {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ nodeId, projectId }: { nodeId: string; projectId?: string }) =>
+      orgApi.deleteNode(nodeId, projectId),
+    onSuccess: (_, { nodeId, projectId }) => {
+      showSuccess(`Organization node ${nodeId} deleted successfully.`);
+      queryClient.invalidateQueries({ queryKey: ['org-subtree', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['org-anomalies', projectId] });
+    },
+    onError: (err: any) => {
+      showError(err.message || 'Failed to delete organization node.');
+    },
+  });
+}

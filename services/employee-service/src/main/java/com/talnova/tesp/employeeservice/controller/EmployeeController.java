@@ -55,6 +55,25 @@ public class EmployeeController {
                 .body(ApiResponse.success(applyPiiMaskingIfRequired(response, userRolesHeader), "Employee profile created successfully", correlationId));
     }
 
+    @GetMapping
+    @Operation(summary = "List Employee Directory Roster", description = "Fetches employee roster profiles for active project with optional filtering by nodeId and status.")
+    public ResponseEntity<ApiResponse<java.util.List<EmployeeResponseDTO>>> getAllEmployees(
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestParam(value = "nodeId", required = false) String nodeId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestHeader(value = "X-User-Roles", required = false) String userRolesHeader,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
+
+        String projectId = resolveProjectId(projectIdParam, servletRequest);
+        java.util.List<EmployeeResponseDTO> list = employeeService.getAllEmployees(projectId, nodeId, status);
+        java.util.List<EmployeeResponseDTO> maskedList = list.stream()
+                .map(emp -> applyPiiMaskingIfRequired(emp, userRolesHeader))
+                .toList();
+
+        String correlationId = ProjectContextHolder.getCorrelationId();
+        return ResponseEntity.ok(ApiResponse.success(maskedList, "Employee roster retrieved successfully", correlationId));
+    }
+
     @GetMapping("/{employeeId}")
     @Operation(summary = "Fetch Employee Profile", description = "Fetches employee profile details by projectId and employeeId.")
     public ResponseEntity<ApiResponse<EmployeeResponseDTO>> getEmployee(

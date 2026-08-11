@@ -12,6 +12,14 @@ interface Props {
   onCancel?: () => void;
 }
 
+const AVAILABLE_LOCALES = [
+  { value: 'en-US', label: 'English (United States) — en-US' },
+  { value: 'si-LK', label: 'Sinhala (Sri Lanka) — si-LK' },
+  { value: 'ta-LK', label: 'Tamil (Sri Lanka) — ta-LK' },
+  { value: 'es-ES', label: 'Spanish (Spain) — es-ES' },
+  { value: 'fr-FR', label: 'French (France) — fr-FR' },
+];
+
 export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const createMutation = useCreateProjectMutation();
 
@@ -32,6 +40,11 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
       actionPlanningEnabled: true,
       kioskModeEnabled: false,
       smsDistributionEnabled: true,
+      emailDistributionEnabled: true,
+      teamsDistributionEnabled: false,
+      slackDistributionEnabled: false,
+      hrisSyncEnabled: true,
+      gdprAnonymizationEnabled: true,
     },
     customAttributeDefinitions: [
       { key: 'TenureYears', displayName: 'Tenure (Years)', dataType: 'NUMERIC' },
@@ -41,12 +54,38 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const toggleLocale = (localeCode: string) => {
+    let updatedLocales = [...formData.supportedLocales];
+    if (updatedLocales.includes(localeCode)) {
+      if (updatedLocales.length === 1) {
+        setValidationError('At least one supported locale is required (VR-CFG-004).');
+        return;
+      }
+      updatedLocales = updatedLocales.filter((l) => l !== localeCode);
+    } else {
+      updatedLocales.push(localeCode);
+    }
+
+    // Ensure defaultLocale remains inside supportedLocales (BR-CFG-002)
+    let newDefaultLocale = formData.defaultLocale;
+    if (!updatedLocales.includes(newDefaultLocale)) {
+      newDefaultLocale = updatedLocales[0] || 'en-US';
+    }
+
+    setFormData({
+      ...formData,
+      supportedLocales: updatedLocales,
+      defaultLocale: newDefaultLocale,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 
+    // VR-CFG-001: Project ID Regex
     if (!formData.projectId || !/^PRJ-[A-Z0-9]{4,10}$/.test(formData.projectId)) {
-      setValidationError('Project ID must match pattern ^PRJ-[A-Z0-9]{4,10}$ (e.g. PRJ-99201)');
+      setValidationError('Project ID must match pattern ^PRJ-[A-Z0-9]{4,10}$ (e.g. PRJ-99201).');
       return;
     }
 
@@ -60,9 +99,35 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
       return;
     }
 
+    // VR-CFG-002: HEX Color Format
+    const hexRegex = /^#([A-Fa-f0-9]{6})$/;
+    if (!hexRegex.test(formData.branding.primaryColor)) {
+      setValidationError('Primary Color must be a valid 6-character HEX color string matching ^#([A-Fa-f0-9]{6})$ (VR-CFG-002).');
+      return;
+    }
+    if (!hexRegex.test(formData.branding.secondaryColor)) {
+      setValidationError('Secondary Color must be a valid 6-character HEX color string matching ^#([A-Fa-f0-9]{6})$ (VR-CFG-002).');
+      return;
+    }
+
+    // VR-CFG-004: Supported Locales Array
+    if (!formData.supportedLocales || formData.supportedLocales.length === 0) {
+      setValidationError('At least one supported locale is required (VR-CFG-004).');
+      return;
+    }
+
+    // BR-CFG-002: Mandatory Default Locale inside Supported Locales
+    if (!formData.supportedLocales.includes(formData.defaultLocale)) {
+      setValidationError('Default locale MUST be present in supported locales array (BR-CFG-002).');
+      return;
+    }
+
     createMutation.mutate(formData, {
       onSuccess: (data) => {
         if (onSuccess) onSuccess(data);
+      },
+      onError: (err: any) => {
+        setValidationError(err.message || 'Failed to provision project workspace.');
       },
     });
   };
@@ -90,9 +155,9 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
           <Input
             label="Project Tenant ID (PRJ-XXXXX)"
             value={formData.projectId}
-            onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, projectId: e.target.value.toUpperCase() })}
             placeholder="PRJ-99201"
-            helperText="Must match pattern ^PRJ-[A-Z0-9]{4,10}$"
+            helperText="Must match pattern ^PRJ-[A-Z0-9]{4,10}$ (BR-CFG-001)"
             required
           />
 
@@ -144,21 +209,104 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
                 })
               }
             />
+            <Input
+              label="Logo URL (HTTPS)"
+              value={formData.branding.logoUrl}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  branding: { ...formData.branding, logoUrl: e.target.value },
+                })
+              }
+              placeholder="https://s3.amazonaws.com/tesp-assets/logo.png"
+            />
           </div>
         </div>
 
         {/* Locales & Defaults */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', margin: '0 0 12px 0' }}>
+            🌐 Locales & Default Language
+          </h4>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '6px' }}>
+              Supported Languages (VR-CFG-004)
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {AVAILABLE_LOCALES.map((loc) => {
+                const isSelected = formData.supportedLocales.includes(loc.value);
+                return (
+                  <button
+                    key={loc.value}
+                    type="button"
+                    onClick={() => toggleLocale(loc.value)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: isSelected ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                      background: isSelected ? '#eff6ff' : '#f8fafc',
+                      color: isSelected ? '#1d4ed8' : '#64748b',
+                    }}
+                  >
+                    {isSelected ? '✓ ' : '+ '}
+                    {loc.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <Select
-            label="Default Primary Language"
+            label="Default Primary Language (BR-CFG-002)"
             value={formData.defaultLocale}
             onChange={(e) => setFormData({ ...formData, defaultLocale: e.target.value })}
-            options={[
-              { value: 'en-US', label: 'English (United States) — en-US' },
-              { value: 'si-LK', label: 'Sinhala (Sri Lanka) — si-LK' },
-              { value: 'ta-LK', label: 'Tamil (Sri Lanka) — ta-LK' },
-            ]}
+            options={AVAILABLE_LOCALES.filter((loc) => formData.supportedLocales.includes(loc.value))}
           />
+        </div>
+
+        {/* Initial Feature Modules */}
+        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', margin: '0 0 12px 0' }}>
+            ⚡ Feature Module Subscription Flags
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            {[
+              ['aiAnalyticsEnabled', 'AI Analytics Engine'],
+              ['actionPlanningEnabled', 'Action Planning Suite'],
+              ['kioskModeEnabled', 'Kiosk Response Mode'],
+              ['smsDistributionEnabled', 'SMS Survey Distribution'],
+              ['emailDistributionEnabled', 'Email Survey Distribution'],
+              ['hrisSyncEnabled', 'HRIS Roster Sync'],
+              ['gdprAnonymizationEnabled', 'GDPR Anonymization'],
+            ].map(([key, label]) => {
+              const checked = Boolean((formData.features as any)?.[key]);
+              return (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      const updatedFeatures = {
+                        aiAnalyticsEnabled: formData.features?.aiAnalyticsEnabled ?? true,
+                        actionPlanningEnabled: formData.features?.actionPlanningEnabled ?? true,
+                        kioskModeEnabled: formData.features?.kioskModeEnabled ?? false,
+                        ...formData.features,
+                        [key]: e.target.checked,
+                      };
+                      setFormData({
+                        ...formData,
+                        features: updatedFeatures,
+                      });
+                    }}
+                  />
+                  <span>{label}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         {/* Action Controls */}

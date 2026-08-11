@@ -74,3 +74,18 @@ export function usePredictOptimalTimeMutation() {
     },
   });
 }
+
+export function useTriggerRemindersMutation() {
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ campaignId, projectId }: { campaignId: string; projectId?: string }) =>
+      distributionApi.triggerReminders(campaignId, projectId),
+    onSuccess: (data) => {
+      showSuccess(`Dispatched ${data.remindedCount} reminder nudges to non-respondents!`);
+    },
+    onError: (err: any) => {
+      showError(err.message || 'Failed to dispatch reminder nudges.');
+    },
+  });
+}

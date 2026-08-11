@@ -5,12 +5,14 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { ErrorState } from '../../../components/ui/ErrorState';
 import { EmployeeDataGrid } from '../../../components/employee/EmployeeDataGrid';
 import { BulkImportModal } from '../../../components/employee/BulkImportModal';
 import { EmployeeFormModal } from '../../../components/employee/EmployeeFormModal';
 import { useTenant } from '../../../context/TenantContext';
 import { EmployeeResponse } from '../../../types/employee';
-import { useHrisSyncMutation } from '../api/useEmployeeQueries';
+import { useEmployeesQuery, useHrisSyncMutation } from '../api/useEmployeeQueries';
 
 export const EmployeeRosterPage: React.FC = () => {
   const { activeProject } = useTenant();
@@ -18,6 +20,9 @@ export const EmployeeRosterPage: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<EmployeeResponse | null>(null);
+
+  // Real Gateway Query
+  const { data: employees = [], isLoading, isError, refetch } = useEmployeesQuery(activeProject?.projectId);
 
   // HRIS Sync Form State
   const [hrisForm, setHrisForm] = useState({
@@ -28,49 +33,6 @@ export const EmployeeRosterPage: React.FC = () => {
   });
 
   const hrisSyncMutation = useHrisSyncMutation();
-
-  // Demo initial employee dataset
-  const demoEmployees: EmployeeResponse[] = [
-    {
-      id: '1',
-      projectId: activeProject?.projectId || 'PRJ-99201',
-      employeeId: 'EMP-10020',
-      fullName: 'Alexander Aitken',
-      email: 'a.aitken@aitkenspence.lk',
-      phoneNumber: '+94771234567',
-      nodeId: 'N-201',
-      matrixNodeIds: ['N-301'],
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      projectId: activeProject?.projectId || 'PRJ-99201',
-      employeeId: 'EMP-10021',
-      fullName: 'J*** C****',
-      email: 'j.c****@aitkenspence.lk',
-      phoneNumber: '+9477****568',
-      nodeId: 'N-201',
-      matrixNodeIds: [],
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: '3',
-      projectId: activeProject?.projectId || 'PRJ-99201',
-      employeeId: 'EMP-10022',
-      fullName: 'Samantha Perera',
-      email: 's.perera@aitkenspence.lk',
-      phoneNumber: '+94779876543',
-      nodeId: 'N-101',
-      matrixNodeIds: ['N-201'],
-      status: 'INACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
 
   const handleEditEmployee = (emp: EmployeeResponse) => {
     setEmployeeToEdit(emp);
@@ -102,20 +64,36 @@ export const EmployeeRosterPage: React.FC = () => {
     <div>
       <PageHeader
         title="Employee Roster & Demographic Attribute Studio"
-        subtitle={`Manage workforce profiles, CSFLE PII encryption, matrix reporting lines, and HRIS sync for ${activeProject?.projectId}`}
+        subtitle={`Manage workforce profiles, CSFLE PII encryption, matrix reporting lines, and HRIS sync for ${activeProject?.projectId || 'Active Project'}`}
       />
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       <div style={{ marginTop: '20px' }}>
         {activeTab === 'roster' && (
-          <EmployeeDataGrid
-            employees={demoEmployees}
-            projectId={activeProject?.projectId || 'PRJ-99201'}
-            onSelectEmployee={handleEditEmployee}
-            onOpenImportWizard={() => setIsImportModalOpen(true)}
-            onOpenCreateModal={handleCreateEmployee}
-          />
+          <>
+            {isLoading ? (
+              <Card variant="bordered" padding="24px">
+                <Skeleton height="320px" borderRadius="12px" />
+              </Card>
+            ) : isError ? (
+              <Card variant="bordered" padding="24px">
+                <ErrorState
+                  title="Failed to Load Employee Directory"
+                  message="Could not retrieve employee roster records from Gateway employee-service."
+                  onRetry={refetch}
+                />
+              </Card>
+            ) : (
+              <EmployeeDataGrid
+                employees={employees}
+                projectId={activeProject?.projectId || 'PRJ-99201'}
+                onSelectEmployee={handleEditEmployee}
+                onOpenImportWizard={() => setIsImportModalOpen(true)}
+                onOpenCreateModal={handleCreateEmployee}
+              />
+            )}
+          </>
         )}
 
         {activeTab === 'hris' && (

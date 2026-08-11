@@ -132,6 +132,23 @@ export const DistributionStudioPage: React.FC = () => {
                   🔒 Generate Token Batch Now
                 </Button>
               </div>
+
+              {generateTokensMutation.data && (
+                <Card variant="bordered" padding="16px" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', marginTop: '16px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#166534', margin: '0 0 8px 0' }}>
+                    ✓ Token Batch Generated & Vaulted Successfully
+                  </h4>
+                  <div style={{ fontSize: '0.8rem', color: '#15803d', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div>Total Tokens Cached in Redis: <strong>{generateTokensMutation.data.generatedCount}</strong></div>
+                    {generateTokensMutation.data.kioskPin && (
+                      <div>Sample Frontline Kiosk PIN: <code style={{ background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>{generateTokensMutation.data.kioskPin}</code></div>
+                    )}
+                    {generateTokensMutation.data.tokens?.length > 0 && (
+                      <div>Sample HMAC Token: <code style={{ fontSize: '0.75rem' }}>{generateTokensMutation.data.tokens[0]}</code></div>
+                    )}
+                  </div>
+                </Card>
+              )}
             </form>
           </Card>
         )}
