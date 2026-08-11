@@ -7,6 +7,15 @@ import {
 } from '../../../types/employee';
 import { useToast } from '../../../context/ToastContext';
 
+export function useEmployeesQuery(projectId: string | undefined, nodeId?: string, status?: string) {
+  return useQuery({
+    queryKey: ['employees', projectId, nodeId, status],
+    queryFn: () => employeeApi.getEmployees(projectId, nodeId, status),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useEmployeeQuery(employeeId: string | undefined, projectId: string | undefined) {
   return useQuery({
     queryKey: ['employee', projectId, employeeId],

@@ -63,8 +63,9 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
     e.preventDefault();
     setValidationError(null);
 
+    // VR-EMP-001 validation
     if (!isEditing && (!formData.employeeId || !/^[A-Za-z0-9_-]{2,30}$/.test(formData.employeeId))) {
-      setValidationError('Employee ID is mandatory and must match pattern ^[A-Za-z0-9_-]{2,30}$ (e.g. EMP-10020)');
+      setValidationError('Employee ID is mandatory and must match pattern ^[A-Za-z0-9_-]{2,30}$ (VR-EMP-001, e.g. EMP-10020)');
       return;
     }
 
@@ -73,12 +74,25 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
       return;
     }
 
+    // VR-EMP-002 validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email.trim())) {
+      setValidationError('Email address must be a valid RFC 5322 email format (VR-EMP-002).');
+      return;
+    }
+
+    // VR-EMP-003 validation
+    if (!formData.nodeId.trim()) {
+      setValidationError('Primary Organization Node ID is required (VR-EMP-003).');
+      return;
+    }
+
     if (isEditing) {
       const payload: UpdateEmployeeRequest = {
-        fullName: formData.fullName,
-        email: formData.email || undefined,
-        phoneNumber: formData.phoneNumber || undefined,
-        nodeId: formData.nodeId,
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim() || undefined,
+        phoneNumber: formData.phoneNumber.trim() || undefined,
+        nodeId: formData.nodeId.trim(),
         status: formData.status,
       };
 
@@ -91,11 +105,11 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
     } else {
       const payload: CreateEmployeeRequest = {
         projectId,
-        employeeId: formData.employeeId,
-        fullName: formData.fullName,
-        email: formData.email || undefined,
-        phoneNumber: formData.phoneNumber || undefined,
-        nodeId: formData.nodeId,
+        employeeId: formData.employeeId.trim(),
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim() || undefined,
+        phoneNumber: formData.phoneNumber.trim() || undefined,
+        nodeId: formData.nodeId.trim(),
         status: formData.status,
       };
 
@@ -125,7 +139,7 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
 
         {!isEditing && (
           <Input
-            label="Employee ID (EMP-XXXXX)"
+            label="Employee ID (VR-EMP-001)"
             value={formData.employeeId}
             onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
             placeholder="EMP-10020"
@@ -143,7 +157,7 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
         />
 
         <Input
-          label="Corporate Email Address"
+          label="Corporate Email Address (VR-EMP-002)"
           type="email"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -158,7 +172,7 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
         />
 
         <Input
-          label="Primary Org Node ID (FEAT-002 Assignment)"
+          label="Primary Org Node ID (VR-EMP-003)"
           value={formData.nodeId}
           onChange={(e) => setFormData({ ...formData, nodeId: e.target.value })}
           placeholder="N-201"

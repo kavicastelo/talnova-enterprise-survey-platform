@@ -118,4 +118,20 @@ public class EmployeeServiceImpl implements EmployeeService {
         EmployeeDocument savedDoc = repository.save(existingDoc);
         return mapper.toResponseDTO(savedDoc);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeResponseDTO> getAllEmployees(String projectId, String nodeId, String status) {
+        EmployeeStatus empStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                empStatus = EmployeeStatus.valueOf(status.toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        List<EmployeeDocument> docs = repository.findAllActiveByProjectId(projectId, nodeId, empStatus);
+        return docs.stream()
+                .map(mapper::toResponseDTO)
+                .toList();
+    }
 }
+
