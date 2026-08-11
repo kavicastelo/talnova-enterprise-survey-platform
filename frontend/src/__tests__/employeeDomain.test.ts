@@ -146,4 +146,56 @@ describe('FEAT-003 Employee Management Domain Integration', () => {
     });
     expect(result.totalProcessed).toBe(500);
   });
+
+  it('mapAiHeaders calls POST /employees/ai/map-headers via gateway client', async () => {
+    const mockMappingResponse = {
+      mappings: [
+        { sourceHeader: 'Emp_Name', targetAttributeKey: 'fullName', confidence: 0.98, isCoreField: true },
+        { sourceHeader: 'Work_Email', targetAttributeKey: 'email', confidence: 0.99, isCoreField: true },
+      ],
+      overallConfidence: 0.985,
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      success: true,
+      data: mockMappingResponse,
+    });
+
+    const result = await employeeApi.mapAiHeaders(['Emp_Name', 'Work_Email']);
+
+    expect(spy).toHaveBeenCalledWith('/employees/ai/map-headers', { headers: ['Emp_Name', 'Work_Email'] });
+    expect(result.mappings).toHaveLength(2);
+    expect(result.mappings[0].targetAttributeKey).toBe('fullName');
+  });
+
+  it('compileSnapshot calls POST /employees/snapshots/compile via gateway client', async () => {
+    const mockSnapshots = [
+      {
+        snapshotId: 'SNP-88102',
+        projectId: 'PRJ-99201',
+        surveyId: 'SRV-101',
+        employeeId: 'EMP-10020',
+        attributes: { Tenure: '3 Years', Band: 'M2' },
+        frozenAt: '2026-08-11T20:00:00Z',
+      },
+    ];
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      success: true,
+      data: mockSnapshots,
+    });
+
+    const payload = {
+      projectId: 'PRJ-99201',
+      surveyId: 'SRV-101',
+      employeeIds: ['EMP-10020'],
+    };
+
+    const result = await employeeApi.compileSnapshot(payload);
+
+    expect(spy).toHaveBeenCalledWith('/employees/snapshots/compile', payload);
+    expect(result).toHaveLength(1);
+    expect(result[0].snapshotId).toBe('SNP-88102');
+  });
 });
+

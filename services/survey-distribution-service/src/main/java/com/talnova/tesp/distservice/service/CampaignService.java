@@ -12,6 +12,8 @@ public interface CampaignService {
 
     CampaignResponseDTO getCampaign(String projectId, String campaignId);
 
+    List<CampaignResponseDTO> getCampaignsByProjectId(String projectId);
+
     CampaignResponseDTO updateCampaignStatus(String projectId, String campaignId, CampaignStatus newStatus);
 
     List<String> resolveTargetParticipantEmployeeIds(String projectId, List<String> nodeIds);

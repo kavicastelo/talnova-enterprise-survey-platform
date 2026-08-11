@@ -19,7 +19,7 @@ interface EmployeeDataGridProps {
 
 export const EmployeeDataGrid: React.FC<EmployeeDataGridProps> = ({
   employees,
-  projectId = 'PRJ-99201',
+  projectId = '',
   onSelectEmployee,
   onOpenImportWizard,
   onOpenCreateModal,

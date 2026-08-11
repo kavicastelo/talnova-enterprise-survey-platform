@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/campaigns")
 @Tag(name = "Survey Campaign Management API", description = "Endpoints for creating, scheduling, and managing campaign state transitions")
@@ -29,6 +31,17 @@ public class CampaignController {
 
     public CampaignController(CampaignService campaignService) {
         this.campaignService = campaignService;
+    }
+
+    @GetMapping
+    @Operation(summary = "List Campaigns for Project", description = "Retrieves all active survey distribution campaigns for a given project tenant")
+    public ResponseEntity<ApiResponse<List<CampaignResponseDTO>>> getCampaigns(
+            @RequestParam(value = "projectId", required = false) String projectIdParam,
+            @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String projectId = resolveProjectId(projectIdParam, request);
+        List<CampaignResponseDTO> list = campaignService.getCampaignsByProjectId(projectId);
+        return ResponseEntity.ok(ApiResponse.success(list, "Project campaigns retrieved successfully", correlationId));
     }
 
     @PostMapping

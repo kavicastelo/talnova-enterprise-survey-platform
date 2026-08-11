@@ -27,8 +27,8 @@ export const EmployeeRosterPage: React.FC = () => {
   // HRIS Sync Form State
   const [hrisForm, setHrisForm] = useState({
     provider: 'WORKDAY_RAAS' as const,
-    apiEndpoint: 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/tenant/raas/EmployeeRosterReport',
-    apiKey: 'secret_wd_token_889201',
+    apiEndpoint: '',
+    apiKey: '',
     autoTerminateMissing: false,
   });
 
@@ -46,11 +46,12 @@ export const EmployeeRosterPage: React.FC = () => {
 
   const handleHrisSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeProject?.projectId) return;
     hrisSyncMutation.mutate({
-      projectId: activeProject?.projectId || 'PRJ-99201',
+      projectId: activeProject.projectId,
       provider: hrisForm.provider,
       apiEndpoint: hrisForm.apiEndpoint,
-      apiKey: hrisForm.apiKey,
+      apiKey: hrisForm.apiKey || undefined,
       autoTerminateMissing: hrisForm.autoTerminateMissing,
     });
   };
@@ -87,7 +88,7 @@ export const EmployeeRosterPage: React.FC = () => {
             ) : (
               <EmployeeDataGrid
                 employees={employees}
-                projectId={activeProject?.projectId || 'PRJ-99201'}
+                projectId={activeProject?.projectId || ''}
                 onSelectEmployee={handleEditEmployee}
                 onOpenImportWizard={() => setIsImportModalOpen(true)}
                 onOpenCreateModal={handleCreateEmployee}
@@ -157,14 +158,14 @@ export const EmployeeRosterPage: React.FC = () => {
 
       {/* Bulk CSV Import Modal */}
       <BulkImportModal
-        projectId={activeProject?.projectId || 'PRJ-99201'}
+        projectId={activeProject?.projectId || ''}
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
       />
 
       {/* Create / Edit Employee Profile Modal */}
       <EmployeeFormModal
-        projectId={activeProject?.projectId || 'PRJ-99201'}
+        projectId={activeProject?.projectId || ''}
         employeeToEdit={employeeToEdit}
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}

@@ -109,3 +109,30 @@ export function useGdprAnonymizeMutation() {
     },
   });
 }
+
+export function useAiHeaderMappingMutation() {
+  const { showError } = useToast();
+
+  return useMutation({
+    mutationFn: (headers: string[]) => employeeApi.mapAiHeaders(headers),
+    onError: (err: any) => {
+      showError(err.message || 'AI Header Mapping failed.');
+    },
+  });
+}
+
+export function useCompileSnapshotMutation() {
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: { projectId: string; surveyId: string; employeeIds: string[] }) =>
+      employeeApi.compileSnapshot(payload),
+    onSuccess: (data) => {
+      showSuccess(`Compiled ${data.length} immutable demographic snapshots.`);
+    },
+    onError: (err: any) => {
+      showError(err.message || 'Demographic snapshot compilation failed.');
+    },
+  });
+}
+

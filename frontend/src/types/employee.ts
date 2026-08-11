@@ -56,3 +56,31 @@ export interface HrisSyncRequest {
   apiKey?: string;
   autoTerminateMissing?: boolean;
 }
+
+export interface HeaderMappingRecommendation {
+  sourceHeader: string;
+  targetAttributeKey: string;
+  confidence: number;
+  isCoreField: boolean;
+}
+
+export interface HeaderMappingResponse {
+  mappings: HeaderMappingRecommendation[];
+  overallConfidence: number;
+}
+
+export interface CompileSnapshotRequest {
+  projectId: string;
+  surveyId: string;
+  employeeIds: string[];
+}
+
+export interface DemographicSnapshotResponse {
+  snapshotId: string;
+  projectId: string;
+  surveyId: string;
+  employeeId: string;
+  attributes: Record<string, any>;
+  frozenAt: string;
+}
+

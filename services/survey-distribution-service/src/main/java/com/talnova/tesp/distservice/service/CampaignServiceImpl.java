@@ -79,6 +79,15 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    public List<CampaignResponseDTO> getCampaignsByProjectId(String projectId) {
+        log.info("Retrieving all active campaigns for projectId: {}", projectId);
+        List<SurveyCampaignDocument> docs = campaignRepository.findByProjectIdAndIsDeletedFalse(projectId);
+        return docs.stream()
+                .map(campaignMapper::toResponseDTO)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public CampaignResponseDTO updateCampaignStatus(String projectId, String campaignId, CampaignStatus newStatus) {
         log.info("Updating status for campaignId: {} to {}", campaignId, newStatus);

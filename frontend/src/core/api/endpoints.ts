@@ -2,7 +2,7 @@ export const API_ENDPOINTS = {
   // Project Config Service (:8081)
   PROJECTS: '/projects',
   PROJECT_BY_ID: (id: string) => `/projects/${id}`,
-  PROJECT_BRANDING: (id: string) => `/projects/${id}/branding`,
+  PROJECT_BRANDING: (id: string) => `/projects/${id}/public-theme`,
   PROJECT_FEATURES: (id: string) => `/projects/${id}/features`,
   PROJECT_LOCALES: (id: string) => `/projects/${id}/locales`,
 

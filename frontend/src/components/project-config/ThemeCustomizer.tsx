@@ -105,24 +105,91 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onSave, isSaving })
             value={logoUrl}
             onChange={(e) => setLogoUrl(e.target.value)}
             placeholder="https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png"
+            helperText="Must be a valid HTTPS image URL"
           />
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <Input
-                label="Primary Color (VR-CFG-002)"
-                type="color"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-              />
+          {/* Primary & Secondary Color Dual Inputs */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '6px' }}>
+                Primary Theme Color (HEX VR-CFG-002)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  style={{ width: '42px', height: '38px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value.toUpperCase())}
+                  placeholder="#1E3A8A"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}
+                />
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <Input
-                label="Secondary Color (VR-CFG-002)"
-                type="color"
-                value={secondaryColor}
-                onChange={(e) => setSecondaryColor(e.target.value)}
-              />
+
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '6px' }}>
+                Secondary Accent Color (HEX VR-CFG-002)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  style={{ width: '42px', height: '38px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value.toUpperCase())}
+                  placeholder="#3B82F6"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Enterprise Color Presets Quick Picker */}
+          <div>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Curated Enterprise Color Presets
+            </label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {[
+                { name: 'Navy & Blue', primary: '#1E3A8A', secondary: '#3B82F6' },
+                { name: 'Slate & Indigo', primary: '#312E81', secondary: '#6366F1' },
+                { name: 'Emerald & Teal', primary: '#064E3B', secondary: '#10B981' },
+                { name: 'Royal & Amber', primary: '#78350F', secondary: '#F59E0B' },
+              ].map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    setPrimaryColor(preset.primary);
+                    setSecondaryColor(preset.secondary);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: preset.primary }} />
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: preset.secondary }} />
+                  {preset.name}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -133,7 +200,7 @@ export const ThemeCustomizer: React.FC<Props> = ({ branding, onSave, isSaving })
             placeholder="https://cdn.enterprise.com/custom-theme.css"
           />
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
             <Button type="button" variant="outline" onClick={handleValidateAccessibility} isLoading={validateMutation.isPending}>
               🔍 Audit WCAG Contrast Ratio
             </Button>

@@ -5,6 +5,9 @@ import {
   EmployeeResponse,
   BulkImportResult,
   HrisSyncRequest,
+  HeaderMappingResponse,
+  CompileSnapshotRequest,
+  DemographicSnapshotResponse,
 } from '../../../types/employee';
 
 const BASE_URL = '/employees';
@@ -62,4 +65,20 @@ export const employeeApi = {
     const res: any = await apiClient.post(`${BASE_URL}/${employeeId}/gdpr-anonymize`, {}, { params });
     return res.data || res;
   },
+
+  async mapAiHeaders(headers: string[]): Promise<HeaderMappingResponse> {
+    const res: any = await apiClient.post(`${BASE_URL}/ai/map-headers`, { headers });
+    return res.data || res;
+  },
+
+  async compileSnapshot(payload: CompileSnapshotRequest): Promise<DemographicSnapshotResponse[]> {
+    const res: any = await apiClient.post(`${BASE_URL}/snapshots/compile`, payload);
+    return res.data || res;
+  },
+
+  async getSnapshot(snapshotId: string): Promise<DemographicSnapshotResponse> {
+    const res: any = await apiClient.post(`${BASE_URL}/snapshots/${snapshotId}`);
+    return res.data || res;
+  },
 };
+

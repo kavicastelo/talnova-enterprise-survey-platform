@@ -17,5 +17,7 @@ public interface CampaignRepository extends MongoRepository<SurveyCampaignDocume
 
     List<SurveyCampaignDocument> findByStatusAndIsDeletedFalse(CampaignStatus status);
 
+    List<SurveyCampaignDocument> findByProjectIdAndIsDeletedFalse(String projectId);
+
     boolean existsByProjectIdAndCampaignIdAndIsDeletedFalse(String projectId, String campaignId);
 }

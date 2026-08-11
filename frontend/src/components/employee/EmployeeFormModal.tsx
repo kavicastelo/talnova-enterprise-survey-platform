@@ -25,13 +25,17 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
     email: string;
     phoneNumber: string;
     nodeId: string;
+    matrixNodeIdsStr: string;
+    attributesJsonStr: string;
     status: EmployeeStatus;
   }>({
     employeeId: '',
     fullName: '',
     email: '',
     phoneNumber: '',
-    nodeId: 'N-201',
+    nodeId: '',
+    matrixNodeIdsStr: '',
+    attributesJsonStr: '',
     status: 'ACTIVE',
   });
 
@@ -44,7 +48,9 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
         fullName: employeeToEdit.fullName || '',
         email: employeeToEdit.email || '',
         phoneNumber: employeeToEdit.phoneNumber || '',
-        nodeId: employeeToEdit.nodeId || 'N-201',
+        nodeId: employeeToEdit.nodeId || '',
+        matrixNodeIdsStr: employeeToEdit.matrixNodeIds ? employeeToEdit.matrixNodeIds.join(', ') : '',
+        attributesJsonStr: employeeToEdit.attributes ? JSON.stringify(employeeToEdit.attributes) : '',
         status: employeeToEdit.status || 'ACTIVE',
       });
     } else {
@@ -53,7 +59,9 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
         fullName: '',
         email: '',
         phoneNumber: '',
-        nodeId: 'N-201',
+        nodeId: '',
+        matrixNodeIdsStr: '',
+        attributesJsonStr: '',
         status: 'ACTIVE',
       });
     }
@@ -87,12 +95,30 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
       return;
     }
 
+    // Parse matrixNodeIds
+    const matrixNodeIds = formData.matrixNodeIdsStr
+      ? formData.matrixNodeIdsStr.split(',').map((s) => s.trim()).filter(Boolean)
+      : undefined;
+
+    // Parse attributes
+    let attributes: Record<string, any> | undefined = undefined;
+    if (formData.attributesJsonStr.trim()) {
+      try {
+        attributes = JSON.parse(formData.attributesJsonStr);
+      } catch (err) {
+        setValidationError('Dynamic demographic attributes must be valid JSON format (e.g. {"Tenure": "3 Years"}).');
+        return;
+      }
+    }
+
     if (isEditing) {
       const payload: UpdateEmployeeRequest = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim() || undefined,
         phoneNumber: formData.phoneNumber.trim() || undefined,
         nodeId: formData.nodeId.trim(),
+        matrixNodeIds,
+        attributes,
         status: formData.status,
       };
 
@@ -110,6 +136,8 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
         email: formData.email.trim() || undefined,
         phoneNumber: formData.phoneNumber.trim() || undefined,
         nodeId: formData.nodeId.trim(),
+        matrixNodeIds,
+        attributes,
         status: formData.status,
       };
 
@@ -177,6 +205,22 @@ export const EmployeeFormModal: React.FC<Props> = ({ projectId, employeeToEdit, 
           onChange={(e) => setFormData({ ...formData, nodeId: e.target.value })}
           placeholder="N-201"
           required
+        />
+
+        <Input
+          label="Matrix Org Node IDs (FR-EMP-005, Comma Separated)"
+          value={formData.matrixNodeIdsStr}
+          onChange={(e) => setFormData({ ...formData, matrixNodeIdsStr: e.target.value })}
+          placeholder="N-301, N-402"
+          helperText="Optional secondary matrix agile or project reporting node assignments"
+        />
+
+        <Input
+          label="Custom Demographic Attributes JSON (FR-EMP-001)"
+          value={formData.attributesJsonStr}
+          onChange={(e) => setFormData({ ...formData, attributesJsonStr: e.target.value })}
+          placeholder='{"Tenure": "3 Years", "WorkLocation": "Colombo HQ"}'
+          helperText="JSON object of custom demographic key-value attributes"
         />
 
         <Select

@@ -192,4 +192,22 @@ describe('FEAT-005 Survey Distribution Domain Integration', () => {
     expect(result.remindedCount).toBe(580);
     expect(result.status).toBe('DISPATCHED');
   });
+
+  it('getCampaigns calls GET /campaigns with projectId filter', async () => {
+    const mockList = [
+      { campaignId: 'CMP-1001', title: 'Q3 Pulse', status: 'ACTIVE' },
+      { campaignId: 'CMP-1002', title: 'Q4 Exit', status: 'DRAFT' },
+    ];
+
+    const spy = vi.spyOn(apiClient, 'get').mockResolvedValue({
+      success: true,
+      data: mockList,
+    });
+
+    const result = await distributionApi.getCampaigns('PRJ-99201');
+
+    expect(spy).toHaveBeenCalledWith('/campaigns', { params: { projectId: 'PRJ-99201' } });
+    expect(result).toHaveLength(2);
+    expect(result[0].campaignId).toBe('CMP-1001');
+  });
 });

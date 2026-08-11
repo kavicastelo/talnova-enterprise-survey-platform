@@ -50,23 +50,43 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
     }
   };
 
-  const handleRunAiMapping = () => {
+  const handleRunAiMapping = async () => {
     if (headers.length === 0) return;
     setIsProcessing(true);
-    const fallbackMappings: HeaderMapping[] = headers.map((h) => ({
-      sourceHeader: h,
-      targetAttributeKey: h.toLowerCase().includes('email') ? 'email' : h.toLowerCase().includes('name') ? 'fullName' : h,
-      confidence: 0.9,
-      isCoreField: ['employeeId', 'fullName', 'email', 'nodeId'].includes(h),
-    }));
-    setMappings(fallbackMappings);
-    setStep(2);
-    setIsProcessing(false);
+    setErrorMessage(null);
+    try {
+      const response = await employeeApi.mapAiHeaders(headers);
+      if (response && response.mappings) {
+        setMappings(response.mappings);
+      } else {
+        const fallbackMappings: HeaderMapping[] = headers.map((h) => ({
+          sourceHeader: h,
+          targetAttributeKey: h.toLowerCase().includes('email') ? 'email' : h.toLowerCase().includes('name') ? 'fullName' : h,
+          confidence: 0.9,
+          isCoreField: ['employeeId', 'fullName', 'email', 'nodeId'].includes(h),
+        }));
+        setMappings(fallbackMappings);
+      }
+      setStep(2);
+    } catch (err: any) {
+      // Client-side fallback if backend AI engine unavailable
+      const fallbackMappings: HeaderMapping[] = headers.map((h) => ({
+        sourceHeader: h,
+        targetAttributeKey: h.toLowerCase().includes('email') ? 'email' : h.toLowerCase().includes('name') ? 'fullName' : h,
+        confidence: 0.85,
+        isCoreField: ['employeeId', 'fullName', 'email', 'nodeId'].includes(h),
+      }));
+      setMappings(fallbackMappings);
+      setStep(2);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleExecuteImport = async () => {
     if (!selectedFile) return;
     setIsProcessing(true);
+    setErrorMessage(null);
     try {
       const res = await employeeApi.bulkImportCsv(selectedFile, projectId, autoTerminate);
       setResult(res);
@@ -75,21 +95,7 @@ export const CsvImportWizardModal: React.FC<CsvImportWizardModalProps> = ({
         onImportComplete(res);
       }
     } catch (err: any) {
-      const fallbackRes: BulkImportResult = {
-        jobId: 'JOB-DEMO-991',
-        projectId,
-        totalProcessed: 5,
-        insertedCount: 5,
-        updatedCount: 0,
-        terminatedCount: autoTerminate ? 1 : 0,
-        failedCount: 0,
-        errors: [],
-      };
-      setResult(fallbackRes);
-      setStep(3);
-      if (onImportComplete) {
-        onImportComplete(fallbackRes);
-      }
+      setErrorMessage(err.message || 'Bulk CSV roster import failed on server.');
     } finally {
       setIsProcessing(false);
     }

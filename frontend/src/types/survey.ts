@@ -90,3 +90,22 @@ export interface AIBiasAnalysisResponse {
   message: string;
   suggestedPrompts: string[];
 }
+
+export interface AITranslateRequest {
+  sourceText: string;
+  targetLocales: string[];
+  sourceLocale?: string;
+}
+
+export interface AITranslateResponse {
+  translations: Record<string, string>;
+}
+
+export interface QuestionLibraryCreateDTO {
+  category: string;
+  themeGroup: string;
+  defaultPrompt: Record<string, string>;
+  questionType: QuestionType;
+  validationRules?: Record<string, any>;
+}
+

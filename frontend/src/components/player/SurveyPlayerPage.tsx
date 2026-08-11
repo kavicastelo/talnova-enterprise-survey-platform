@@ -311,16 +311,18 @@ export const SurveyPlayerPage: React.FC<Props> = ({
                   {/* Choice Select Options */}
                   {(q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {['Option 1', 'Option 2', 'Option 3'].map((opt) => {
-                        const isChecked = currentAns.selectedOptions?.includes(opt) || false;
+                      {((q as any).options || ['Option A', 'Option B', 'Option C']).map((optionItem: any) => {
+                        const optVal = typeof optionItem === 'string' ? optionItem : (optionItem.value || Object.values(optionItem.label || {})[0] || 'Option');
+                        const optLabel = typeof optionItem === 'string' ? optionItem : (optionItem.label?.['en'] || Object.values(optionItem.label || {})[0] || optionItem.value || 'Option');
+                        const isChecked = currentAns.selectedOptions?.includes(optVal) || false;
                         return (
-                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer' }}>
+                          <label key={optVal} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer' }}>
                             <input
                               type={q.type === 'SINGLE_CHOICE' ? 'radio' : 'checkbox'}
                               checked={isChecked}
-                              onChange={() => handleOptionToggle(q.questionId, opt, q.type === 'SINGLE_CHOICE')}
+                              onChange={() => handleOptionToggle(q.questionId, optVal, q.type === 'SINGLE_CHOICE')}
                             />
-                            <span>{opt}</span>
+                            <span>{optLabel}</span>
                           </label>
                         );
                       })}
