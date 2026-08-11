@@ -6,7 +6,7 @@ export const AuthLayout: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         display: 'grid',
         placeItems: 'center',
         padding: '24px',

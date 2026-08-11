@@ -58,17 +58,17 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md bg-white shadow-2xl dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md bg-white shadow-2xl border-l border-slate-200">
       <div className="flex flex-col w-full p-6">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Report Generation & Scheduling</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-lg">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          <h2 className="text-lg font-bold text-slate-900">Report Generation & Scheduling</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-lg">
             &times;
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div className="mt-4 flex border-b border-slate-200 dark:border-slate-800">
+        <div className="mt-4 flex border-b border-slate-200">
           <button
             onClick={() => setActiveTab('PROGRESS')}
             className={`pb-2 px-4 text-xs font-bold uppercase tracking-wider border-b-2 ${
@@ -94,21 +94,21 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
         {/* Tab 1: Live Job Progress */}
         {activeTab === 'PROGRESS' && (
           <div className="mt-6 space-y-6 flex-1">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Job ID</span>
+                <span className="text-xs font-bold uppercase text-slate-600">Job ID</span>
                 <span className="text-xs font-mono font-semibold text-blue-600">{jobId || 'N/A'}</span>
               </div>
 
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Status</span>
+                <span className="text-xs font-bold uppercase text-slate-600">Status</span>
                 <span
                   className={`px-2.5 py-1 text-xs font-bold rounded-full ${
                     jobDetails?.status === 'COMPLETED'
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      ? 'bg-emerald-100 text-emerald-800'
                       : jobDetails?.status === 'FAILED'
-                      ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
-                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {jobDetails?.status || 'QUEUED'}
@@ -116,7 +116,7 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                 <div
                   className={`h-2.5 rounded-full transition-all duration-500 ${
                     jobDetails?.status === 'COMPLETED'
@@ -130,9 +130,9 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
             </div>
 
             {jobDetails?.status === 'COMPLETED' && jobDetails.downloadUrl && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
-                <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200 mb-1">Report Ready for Download</h3>
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-4">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <h3 className="text-sm font-bold text-emerald-900 mb-1">Report Ready for Download</h3>
+                <p className="text-xs text-emerald-700 mb-4">
                   Pre-signed AWS S3 link active (24-hour expiration TTL per BR-RPT-003)
                 </p>
                 <a
@@ -152,33 +152,33 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
         {activeTab === 'SCHEDULED' && (
           <form onSubmit={handleScheduleSubmit} className="mt-6 space-y-4 flex-1">
             {scheduleSuccessMsg && (
-              <div className="rounded-lg bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <div className="rounded-lg bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200">
                 {scheduleSuccessMsg}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                 Recipient HR Director Email
               </label>
               <input
                 type="email"
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                 Quartz Cron Expression (FR-RPT-007)
               </label>
               <input
                 type="text"
                 value={cronExpression}
                 onChange={(e) => setCronExpression(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-xs font-mono text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 text-xs font-mono text-slate-900 focus:border-blue-600 focus:outline-none"
                 required
               />
               <p className="mt-1 text-[11px] text-slate-500">Default: '0 0 7 ? * MON' (Every Monday at 07:00 AM)</p>
@@ -193,10 +193,10 @@ export const ReportJobProgressDrawer: React.FC<ReportJobProgressDrawerProps> = (
           </form>
         )}
 
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="pt-4 border-t border-slate-200">
           <button
             onClick={onClose}
-            className="w-full rounded-lg border border-slate-300 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="w-full rounded-lg border border-slate-300 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
           >
             Close Drawer
           </button>

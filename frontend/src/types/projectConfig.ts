@@ -1,12 +1,13 @@
-export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' | 'PROVISIONING';
 
 export type DataType = 'STRING' | 'NUMERIC' | 'ENUM' | 'DATE';
 
 export interface Branding {
-  companyName: string;
+  companyName?: string;
   logoUrl?: string;
   primaryColor: string;
   secondaryColor: string;
+  fontFamily?: string;
   customCssUrl?: string;
 }
 
@@ -14,7 +15,12 @@ export interface FeatureFlags {
   aiAnalyticsEnabled: boolean;
   actionPlanningEnabled: boolean;
   kioskModeEnabled: boolean;
-  smsDistributionEnabled: boolean;
+  smsDistributionEnabled?: boolean;
+  emailDistributionEnabled?: boolean;
+  teamsDistributionEnabled?: boolean;
+  slackDistributionEnabled?: boolean;
+  hrisSyncEnabled?: boolean;
+  gdprAnonymizationEnabled?: boolean;
 }
 
 export interface CustomAttributeDef {
@@ -22,6 +28,24 @@ export interface CustomAttributeDef {
   displayName: string;
   dataType: DataType;
   allowedValues?: string[];
+}
+
+export interface ProjectTenant {
+  id?: string;
+  projectId: string;
+  name: string;
+  projectName: string;
+  description?: string;
+  status: 'ACTIVE' | 'ARCHIVED' | 'PROVISIONING';
+  branding: Branding;
+  supportedLocales: string[];
+  defaultLocale: string;
+  features: FeatureFlags;
+  customAttributeDefinitions?: CustomAttributeDef[];
+  code?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectCreateRequest {

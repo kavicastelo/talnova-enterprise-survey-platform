@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock, Mail, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types/auth';
+import { useToast } from '../../context/ToastContext';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -9,73 +10,95 @@ import { Button } from '../../components/ui/Button';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const [email, setEmail] = useState('admin@aitkenspence.lk');
-  const [role, setRole] = useState<UserRole>('SUPER_ADMIN');
+  const [password, setPassword] = useState('password123');
+  const [projectId, setProjectId] = useState('PRJ-99201');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await login(email, role);
-    setIsSubmitting(false);
-    navigate('/dashboard');
+    try {
+      await login({ email, password, projectId });
+      toast.success('Authentication successful', `Welcome back, ${email}`);
+
+      if (email.includes('super')) {
+        navigate('/super-admin/dashboard');
+      } else if (email.includes('consultant')) {
+        navigate('/consultant/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      toast.error('Authentication failed', err.message || 'Invalid credentials');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Card variant="bordered" padding="32px">
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div
-          style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-            display: 'grid',
-            placeItems: 'center',
-            margin: '0 auto 12px auto',
-            fontWeight: 800,
-            color: '#ffffff',
-            fontSize: '1.4rem',
-          }}
-        >
+    <Card className="max-w-md w-full border-slate-200 bg-white shadow-xl p-6 sm:p-8">
+      <div className="text-center mb-6">
+        <div className="w-12 h-12 rounded-xl bg-indigo-600 border border-indigo-400/40 flex items-center justify-center mx-auto mb-3 font-bold text-white text-xl shadow-lg">
           T
         </div>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
           TESP Platform Sign In
         </h2>
-        <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
-          Select user identity and role context for API Gateway testing
+        <p className="text-xs text-slate-500 mt-1">
+          Enterprise Survey Platform Single Sign-On
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
-          label="Corporate Email Address"
+          label="Corporate Email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<Mail className="w-4 h-4" />}
+          required
+        />
+
+        <Input
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          leftIcon={<Lock className="w-4 h-4" />}
           required
         />
 
         <Select
-          label="Role & RBAC Security Context"
-          value={role}
-          onChange={(e) => setRole(e.target.value as UserRole)}
+          label="Tenant Project Scope"
+          value={projectId}
+          onChange={(e) => setProjectId(e.target.value)}
           options={[
-            { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN — Platform Super Administrator' },
-            { value: 'PROJECT_ADMIN', label: 'PROJECT_ADMIN — Tenant Project Admin' },
-            { value: 'HR_MANAGER', label: 'HR_MANAGER — Human Resources Manager' },
-            { value: 'DEPARTMENT_MANAGER', label: 'DEPARTMENT_MANAGER — Department Line Manager' },
-            { value: 'CONSULTANT_DAASH', label: 'CONSULTANT_DAASH — Third-Party Analyst' },
-            { value: 'SURVEY_RESPONDENT', label: 'SURVEY_RESPONDENT — Survey Participant' },
+            { value: 'PRJ-99201', label: 'PRJ-99201 — Aitken Spence Enterprise Portal' },
+            { value: 'PRJ-88102', label: 'PRJ-88102 — Talnova Global Workforce' },
+            { value: 'PRJ-77303', label: 'PRJ-77303 — Asia Telecom Operations' },
           ]}
         />
 
-        <Button type="submit" isLoading={isSubmitting} style={{ marginTop: '8px' }}>
-          Sign In to Platform
-        </Button>
+        <div className="pt-2">
+          <Button
+            type="submit"
+            isLoading={isSubmitting}
+            className="w-full"
+            leftIcon={<Shield className="w-4 h-4" />}
+          >
+            Authenticate & Access Platform
+          </Button>
+        </div>
       </form>
+
+      <div className="mt-6 pt-4 border-t border-slate-200 text-center">
+        <p className="text-[11px] text-slate-500 font-mono">
+          API Gateway Ingress: <span className="text-indigo-600 font-semibold">http://localhost:8080/api/v1</span>
+        </p>
+      </div>
     </Card>
   );
 };

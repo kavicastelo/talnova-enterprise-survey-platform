@@ -84,27 +84,27 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg bg-white shadow-2xl dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg bg-white shadow-2xl border-l border-slate-200">
       <div className="flex flex-col w-full p-6 overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <span className="text-xs font-mono font-bold text-blue-600">{card.actionPlanId}</span>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-1">{card.title}</h2>
+            <h2 className="text-lg font-bold text-slate-900 mt-1">{card.title}</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-xl">
             &times;
           </button>
         </div>
 
         {message && (
-          <div className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200">
+          <div className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200">
             {message}
           </div>
         )}
 
         <div className="mt-4 space-y-6">
           {/* Metadata Badges */}
-          <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 border border-slate-200">
             <div>
               <span className="block text-[10px] font-bold uppercase text-slate-500">Baseline Score</span>
               <span className="text-sm font-bold text-red-500">{card.baselineScore}%</span>
@@ -115,7 +115,7 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
             </div>
             <div>
               <span className="block text-[10px] font-bold uppercase text-slate-500">Assignee</span>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{card.assigneeId}</span>
+              <span className="text-xs font-semibold text-slate-800">{card.assigneeId}</span>
             </div>
             <div>
               <span className="block text-[10px] font-bold uppercase text-slate-500">Status</span>
@@ -124,13 +124,13 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
           </div>
 
           {/* External Task Sync Bridge */}
-          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Bi-Directional External Task Bridge (FR-ACT-004)
             </h3>
             {card.externalSyncSystem ? (
-              <div className="flex items-center space-x-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-950 rounded">System: {card.externalSyncSystem}</span>
+              <div className="flex items-center space-x-2 text-xs font-bold text-indigo-600">
+                <span className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded">System: {card.externalSyncSystem}</span>
               </div>
             ) : (
               <div className="flex space-x-2">
@@ -153,9 +153,9 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
           </div>
 
           {/* AI Recommended Action Templates */}
-          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800 space-y-3">
+          <div className="rounded-xl border border-slate-200 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Daash AI Template Recommender
               </h3>
               <button
@@ -169,8 +169,8 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
             {recommendations.length > 0 && (
               <div className="space-y-2 pt-2">
                 {recommendations.map((tpl) => (
-                  <div key={tpl.templateId} className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                    <span className="font-bold text-slate-900 dark:text-white">{tpl.title}</span>
+                  <div key={tpl.templateId} className="rounded-lg bg-slate-50 p-3 text-xs border border-slate-200">
+                    <span className="font-bold text-slate-900">{tpl.title}</span>
                     <p className="mt-1 text-slate-500 text-[11px]">{tpl.description}</p>
                   </div>
                 ))}
@@ -179,10 +179,10 @@ export const ActionCardDetailDrawer: React.FC<ActionCardDetailDrawerProps> = ({
           </div>
         </div>
 
-        <div className="pt-6 border-t border-slate-200 dark:border-slate-800 mt-auto">
+        <div className="pt-6 border-t border-slate-200 mt-auto">
           <button
             onClick={onClose}
-            className="w-full rounded-lg border border-slate-300 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="w-full rounded-lg border border-slate-300 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
           >
             Close Drawer
           </button>

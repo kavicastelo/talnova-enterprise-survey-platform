@@ -1,29 +1,30 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  subtitle?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
-  subtitle,
-  size = 'md',
+  description,
   children,
   footer,
+  maxWidth,
+  size = 'md',
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -37,101 +38,41 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  const getMaxWidth = () => {
-    switch (size) {
-      case 'sm':
-        return '400px';
-      case 'lg':
-        return '800px';
-      case 'xl':
-        return '1100px';
-      case 'full':
-        return '95vw';
-      case 'md':
-      default:
-        return '600px';
-    }
+  const targetSize = (maxWidth || size) as 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+
+  const widthClasses: Record<string, string> = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '4xl': 'max-w-4xl',
   };
 
+  const appliedWidth = widthClasses[targetSize] || 'max-w-md';
+
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        background: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(4px)',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '16px',
-        animation: 'fadeIn 0.15s ease-out',
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
       <div
+        className={`w-full ${appliedWidth} bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: getMaxWidth(),
-          background: '#ffffff',
-          borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: '90vh',
-          overflow: 'hidden',
-        }}
       >
-        {/* Header */}
-        {(title || subtitle) && (
-          <div
-            style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid #e2e8f0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-            }}
-          >
+        {(title || description) && (
+          <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200">
             <div>
-              {title && <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{title}</h3>}
-              {subtitle && <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>{subtitle}</p>}
+              {title && <h3 className="text-lg font-semibold text-slate-900">{title}</h3>}
+              {description && <p className="text-xs text-slate-500 mt-1">{description}</p>}
             </div>
             <button
               onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '1.25rem',
-                color: '#94a3b8',
-                fontWeight: 700,
-                lineHeight: 1,
-              }}
+              className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
             >
-              &times;
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
-
-        {/* Content Body */}
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>{children}</div>
-
-        {/* Footer */}
-        {footer && (
-          <div
-            style={{
-              padding: '16px 24px',
-              borderTop: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '12px',
-            }}
-          >
-            {footer}
-          </div>
-        )}
+        <div className="p-6 overflow-y-auto flex-1 text-slate-800">{children}</div>
+        {footer && <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">{footer}</div>}
       </div>
     </div>
   );

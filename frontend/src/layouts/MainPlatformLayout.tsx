@@ -1,240 +1,210 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  FileQuestion,
+  Send,
+  BarChart3,
+  BrainCircuit,
+  FileText,
+  CheckSquare,
+  Bell,
+  FileCheck,
+  Sliders,
+  Flag,
+  Globe,
+  Palette,
+  LogOut,
+  ChevronDown,
+  Menu,
+  X,
+  Shield,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTenant } from '../context/TenantContext';
 import { Badge } from '../components/ui/Badge';
+import { UserRole } from '../core/auth/auth.types';
 
 export const MainPlatformLayout: React.FC = () => {
-  const { user, logout, hasAnyRole } = useAuth();
-  const { activeProject, projectsList, switchProject, branding, featureFlags } = useTenant();
+  const { user, logout, hasRole } = useAuth();
+  const { activeProjectId, projects, switchProject } = useTenant();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const navItems = [
-    { label: 'Executive Dashboard', path: '/dashboard', icon: '📊', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] as const },
-    { label: 'Tenant Provisioning', path: '/settings/projects', icon: '🏢', roles: ['SUPER_ADMIN'] as const },
-    { label: 'White-Label Branding', path: '/settings/branding', icon: '🎨', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] as const },
-    { label: 'Feature Flag Matrix', path: '/settings/features', icon: '🚩', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] as const },
-    { label: 'Locales & Languages', path: '/settings/locales', icon: '🌐', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] as const },
-    { label: 'Org Hierarchy Tree', path: '/organization', icon: '🌳', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] as const },
-    { label: 'Employee Roster', path: '/employees', icon: '👥', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] as const },
-    { label: 'Survey Campaigns', path: '/surveys', icon: '📋', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] as const },
-    { label: 'Distribution & Tokens', path: '/distribution', icon: '🚀', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] as const },
-    { label: 'Analytics Engine', path: '/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] as const },
-    { label: 'AI Sentiment & Summaries', path: '/ai-insights', icon: '✨', flag: 'aiAnalyticsEnabled' as const, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH'] as const },
-    { label: 'Report Job Generator', path: '/reports', icon: '📑', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] as const },
-    { label: 'Action Planning Kanban', path: '/action-plans', icon: '🎯', flag: 'actionPlanningEnabled' as const, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER'] as const },
-    { label: 'Notification Logs', path: '/notifications', icon: '🔔', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] as const },
-    { label: 'Immutable Audit Trail', path: '/audit', icon: '🛡️', roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] as const },
+  const navItems: Array<{
+    label: string;
+    path: string;
+    icon: React.ReactNode;
+    roles: UserRole[];
+  }> = [
+    { label: 'Executive Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] },
+    { label: 'Org Hierarchy Tree', path: '/organization', icon: <Building2 className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] },
+    { label: 'Employee Roster', path: '/employees', icon: <Users className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] },
+    { label: 'Survey Campaigns', path: '/surveys', icon: <FileQuestion className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] },
+    { label: 'Distribution & Tokens', path: '/distribution', icon: <Send className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER'] },
+    { label: 'Analytics Engine', path: '/analytics', icon: <BarChart3 className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] },
+    { label: 'AI Sentiment & Risk', path: '/ai-insights', icon: <BrainCircuit className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'CONSULTANT_DAASH'] },
+    { label: 'Reporting Center', path: '/reports', icon: <FileText className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'CONSULTANT_DAASH'] },
+    { label: 'Action Planning', path: '/action-plans', icon: <CheckSquare className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER'] },
+    { label: 'Notification Logs', path: '/notifications', icon: <Bell className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] },
+    { label: 'Audit Trail', path: '/audit', icon: <FileCheck className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] },
+    { label: 'Project Settings', path: '/settings/projects', icon: <Sliders className="w-4 h-4" />, roles: ['SUPER_ADMIN'] },
+    { label: 'Branding Configuration', path: '/settings/branding', icon: <Palette className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] },
+    { label: 'Feature Flags', path: '/settings/features', icon: <Flag className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] },
+    { label: 'Locale Management', path: '/settings/locales', icon: <Globe className="w-4 h-4" />, roles: ['SUPER_ADMIN', 'PROJECT_ADMIN'] },
   ];
 
-  const filteredNavItems = navItems.filter((item) => {
-    if (!hasAnyRole([...item.roles])) return false;
-    if (item.flag && !featureFlags[item.flag]) return false;
-    return true;
-  });
+  const filteredNavItems = navItems.filter((item) => hasRole(item.roles));
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f8fafc' }}>
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* Top Application Header */}
-      <header
-        style={{
-          height: '64px',
-          background: '#0f172a',
-          color: '#ffffff',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '0 24px',
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-3 md:gap-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#ffffff',
-              fontSize: '1.25rem',
-              cursor: 'pointer',
-              display: 'none',
-            }}
-            className="mobile-hamburger"
+            className="md:hidden text-slate-500 hover:text-slate-900 p-1"
           >
-            ☰
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: 800,
-                color: '#ffffff',
-                fontSize: '1.1rem',
-              }}
-            >
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-indigo-600 border border-indigo-400/40 flex items-center justify-center font-bold text-white shadow-md">
               T
             </div>
-            <div>
-              <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.025em', display: 'block', lineHeight: 1.1 }}>
-                TESP Platform
+            <div className="hidden sm:block">
+              <span className="font-bold text-base tracking-tight text-slate-900 block leading-tight">
+                TESP PLATFORM
               </span>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Talnova Enterprise Survey Platform</span>
+              <span className="text-[10px] text-slate-500 font-mono">Talnova Enterprise Survey Platform</span>
             </div>
           </div>
 
-          {/* Project Tenant Selector Dropdown */}
-          <div style={{ marginLeft: '24px', borderLeft: '1px solid #334155', paddingLeft: '16px' }}>
+          <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+          {/* Project Tenant Selector */}
+          <div className="flex items-center gap-2 bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1.5">
+            <Building2 className="w-4 h-4 text-indigo-600" />
             <select
-              value={activeProject?.projectId || ''}
+              value={activeProjectId}
               onChange={(e) => switchProject(e.target.value)}
-              style={{
-                background: '#1e293b',
-                color: '#ffffff',
-                border: '1px solid #475569',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '0.825rem',
-                fontWeight: 600,
-                outline: 'none',
-                cursor: 'pointer',
-              }}
+              className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1"
             >
-              {projectsList.map((p) => (
-                <option key={p.projectId} value={p.projectId}>
-                  {p.projectId} — {p.branding.companyName}
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-white text-slate-900">
+                  {p.name} ({p.id})
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* User Session Profile Menu */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>{user?.fullName}</div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '2px' }}>
-              <Badge variant={user?.role === 'SUPER_ADMIN' ? 'danger' : 'info'}>{user?.role}</Badge>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: '#334155',
-              border: '2px solid #3b82f6',
-              color: '#ffffff',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            {user?.fullName.charAt(0)}
-          </button>
-
-          {isUserMenuOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: '8px',
-                width: '220px',
-                background: '#ffffff',
-                borderRadius: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                border: '1px solid #cbd5e1',
-                padding: '8px 0',
-                zIndex: 100,
-                color: '#0f172a',
-              }}
+        {/* User Identity & Portal Portals Links */}
+        <div className="flex items-center gap-3">
+          {hasRole(['SUPER_ADMIN']) && (
+            <NavLink
+              to="/super-admin/dashboard"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition-colors"
             >
-              <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '0.8rem', color: '#64748b' }}>
-                Signed in as <strong style={{ color: '#0f172a' }}>{user?.email}</strong>
-              </div>
-              <button
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  logout();
-                  navigate('/login');
-                }}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ef4444',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                }}
-              >
-                🚪 Sign Out
-              </button>
-            </div>
+              <Shield className="w-3.5 h-3.5" />
+              <span>Super Admin</span>
+            </NavLink>
           )}
+
+          {hasRole(['CONSULTANT_DAASH']) && (
+            <NavLink
+              to="/consultant/dashboard"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition-colors"
+            >
+              <Badge variant="indigo" size="sm">Daash Consultant</Badge>
+            </NavLink>
+          )}
+
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600">
+                {user?.name ? user.name[0] : 'U'}
+              </div>
+              <div className="text-left hidden md:block">
+                <p className="text-xs font-semibold text-slate-900 leading-tight">{user?.name || 'User Session'}</p>
+                <p className="text-[10px] text-slate-500">{user?.roles?.[0] || 'Authenticated'}</p>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-500" />
+            </button>
+
+            {isUserMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-semibold text-slate-900">{user?.name}</p>
+                  <p className="text-[11px] text-slate-500 font-mono truncate">{user?.email}</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {user?.roles?.map((r) => (
+                      <Badge key={r} variant="indigo" size="sm">
+                        {r}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-rose-600 hover:bg-slate-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Main Body Layout with Sidebar + Content */}
-      <div style={{ display: 'flex', flex: 1 }}>
-        {/* Navigation Sidebar */}
+      <div className="flex-1 flex">
+        {/* Sidebar Navigation */}
         <aside
-          style={{
-            width: '260px',
-            background: '#ffffff',
-            borderRight: '1px solid #e2e8f0',
-            padding: '16px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-          }}
+          className={`w-64 bg-white border-r border-slate-200 p-4 flex flex-col gap-1 fixed md:static inset-y-16 left-0 z-30 transition-transform md:translate-x-0 ${
+            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
         >
-          <div style={{ padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Domain Modules ({filteredNavItems.length})
+          <p className="px-3 text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">Platform Features</p>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
+            {filteredNavItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`
+                }
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
           </div>
 
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '9px 12px',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#1d4ed8' : '#475569',
-                background: isActive ? '#eff6ff' : 'transparent',
-                textDecoration: 'none',
-                transition: 'all 0.15s ease-in-out',
-              })}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
+          <div className="pt-3 border-t border-slate-200 text-[10px] font-mono text-slate-500 flex items-center justify-between">
+            <span>Project: {activeProjectId}</span>
+            <span className="text-emerald-600 font-semibold">Gateway Ready</span>
+          </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main style={{ flex: 1, padding: '28px 32px', overflowY: 'auto' }}>
+        {/* Main View Area */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50">
           <Outlet />
         </main>
       </div>
