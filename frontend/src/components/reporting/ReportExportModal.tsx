@@ -74,36 +74,36 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl border border-slate-200">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Export Executive & Analytical Reports</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">White-label PDF briefings & streaming XLSX multi-tab exports</p>
+            <h2 className="text-xl font-bold text-slate-900">Export Executive & Analytical Reports</h2>
+            <p className="text-xs text-slate-500">White-label PDF briefings & streaming XLSX multi-tab exports</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold"
+            className="text-slate-400 hover:text-slate-600 text-lg font-bold"
           >
             &times;
           </button>
         </div>
 
         {errorMessage && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-800">
+          <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200">
             {errorMessage}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Report Format & Document Type
             </label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as ReportType)}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="EXEC_SUMMARY_PDF">PDF — 10-Page Executive Summary Briefing</option>
               <option value="DEPT_BREAKDOWN_PDF">PDF — Departmental Breakdown Report</option>
@@ -113,13 +113,13 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Target Organization Node Scope
             </label>
             <select
               value={nodeId}
               onChange={(e) => setNodeId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
             >
               <option value="GLOBAL_ORG">Global Enterprise (All Nodes)</option>
               <option value="IT_DIVISION">IT & Technology Division</option>
@@ -128,11 +128,11 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
             </select>
           </div>
 
-          <div className="space-y-2 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <span className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <div className="space-y-2 rounded-lg bg-slate-50 p-3 border border-slate-200">
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Report Section Inclusions
             </span>
-            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800">
               <input
                 type="checkbox"
                 checked={includeHeatmaps}
@@ -141,7 +141,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
               />
               <span>Include 2D Department Heatmaps & eNPS Scorecards</span>
             </label>
-            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+            <label className="flex items-center space-x-2 text-xs font-medium text-slate-800">
               <input
                 type="checkbox"
                 checked={includeAiSummary}
@@ -152,8 +152,8 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
             </label>
           </div>
 
-          <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-            <label className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <div className="rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-700">
               <input
                 type="checkbox"
                 checked={enablePassword}
@@ -168,7 +168,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
                 placeholder="Enter password (6-30 chars)"
                 value={passwordProtection}
                 onChange={(e) => setPasswordProtection(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="mt-2 w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
               />
             )}
           </div>
@@ -177,7 +177,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>

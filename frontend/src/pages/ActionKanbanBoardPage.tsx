@@ -29,12 +29,12 @@ export interface ActionPlanCard {
 }
 
 const KANBAN_COLUMNS: { key: ActionStatus; label: string; color: string }[] = [
-  { key: 'DRAFT', label: 'Draft (Auto-Triggered)', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' },
-  { key: 'PROPOSED', label: 'Proposed for Review', color: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' },
-  { key: 'APPROVED', label: 'Approved by HR', color: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300' },
-  { key: 'IN_PROGRESS', label: 'In Progress (Executing)', color: 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300' },
-  { key: 'COMPLETED', label: 'Completed', color: 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300' },
-  { key: 'VERIFIED', label: 'Verified (+Δ Score)', color: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' },
+  { key: 'DRAFT', label: 'Draft (Auto-Triggered)', color: 'bg-slate-100 text-slate-700' },
+  { key: 'PROPOSED', label: 'Proposed for Review', color: 'bg-amber-50 text-amber-800 border border-amber-200' },
+  { key: 'APPROVED', label: 'Approved by HR', color: 'bg-blue-50 text-blue-800 border border-blue-200' },
+  { key: 'IN_PROGRESS', label: 'In Progress (Executing)', color: 'bg-indigo-50 text-indigo-800 border border-indigo-200' },
+  { key: 'COMPLETED', label: 'Completed', color: 'bg-purple-50 text-purple-800 border border-purple-200' },
+  { key: 'VERIFIED', label: 'Verified (+Δ Score)', color: 'bg-emerald-50 text-emerald-800 border border-emerald-200' },
 ];
 
 export const ActionKanbanBoardPage: React.FC = () => {
@@ -97,12 +97,12 @@ export const ActionKanbanBoardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-slate-950 text-slate-900 dark:text-white">
+    <div className="min-h-screen bg-slate-50 p-6 text-slate-900">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200 dark:border-slate-800 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200 gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Closed-Loop Action Planning & Remediation Board</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500">
             Turn survey feedback insights into accountable, trackable workplace improvements (FR-ACT-007)
           </p>
         </div>
@@ -114,7 +114,7 @@ export const ActionKanbanBoardPage: React.FC = () => {
             <select
               value={nodeId}
               onChange={(e) => setNodeId(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold"
             >
               <option value="N-301">Engineering Dept (N-301)</option>
               <option value="GLOBAL_ORG">Global Enterprise Scope</option>
@@ -131,7 +131,7 @@ export const ActionKanbanBoardPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-800 dark:bg-red-950/50 dark:text-red-300 border border-red-200">
+        <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-800 border border-red-200">
           {error}
         </div>
       )}
@@ -144,13 +144,13 @@ export const ActionKanbanBoardPage: React.FC = () => {
           return (
             <div
               key={col.key}
-              className="flex flex-col rounded-xl bg-slate-100/70 p-3 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 min-h-[500px]"
+              className="flex flex-col rounded-xl bg-slate-100 p-3 border border-slate-200 min-h-[500px]"
             >
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
                 <span className={`px-2 py-0.5 text-[11px] font-bold rounded-md ${col.color}`}>
                   {col.label}
                 </span>
-                <span className="text-xs font-bold text-slate-400">{colCards.length}</span>
+                <span className="text-xs font-bold text-slate-500">{colCards.length}</span>
               </div>
 
               <div className="flex-1 space-y-3">
@@ -162,22 +162,22 @@ export const ActionKanbanBoardPage: React.FC = () => {
                   colCards.map((card) => (
                     <div
                       key={card.actionPlanId}
-                      className="rounded-lg bg-white p-3 shadow-sm border border-slate-200 hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700"
+                      className="rounded-lg bg-white p-3 shadow-sm border border-slate-200 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-mono font-bold text-blue-600">{card.actionPlanId}</span>
                         {card.externalSyncSystem && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 rounded">
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">
                             {card.externalSyncSystem}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">{card.title}</h3>
-                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">{card.description}</p>
+                      <h3 className="text-xs font-bold text-slate-900 line-clamp-2">{card.title}</h3>
+                      <p className="mt-1 text-[11px] text-slate-500 line-clamp-2">{card.description}</p>
 
-                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/50 text-[10px]">
-                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100 text-[10px]">
+                        <span className="font-semibold text-slate-600">
                           Score: <strong className="text-red-500">{card.baselineScore}%</strong> &rarr; <strong className="text-emerald-500">{card.targetScore}%</strong>
                         </span>
                         <span className="text-slate-400">{card.milestoneCount} Milestones</span>

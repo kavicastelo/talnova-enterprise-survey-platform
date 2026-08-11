@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 
 export interface SelectOption {
   value: string;
@@ -8,51 +8,38 @@ export interface SelectOption {
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
-  options: SelectOption[];
-  helperText?: string;
   error?: string;
+  options: SelectOption[];
 }
 
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, helperText, error, style, disabled, ...props }, ref) => {
+export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+  ({ label, error, options, className = '', id, ...props }, ref) => {
+    const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+          <label htmlFor={selectId} className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
             {label}
-            {props.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
           </label>
         )}
         <select
+          id={selectId}
           ref={ref}
-          disabled={disabled}
-          style={{
-            width: '100%',
-            padding: '9px 12px',
-            fontSize: '0.875rem',
-            borderRadius: '8px',
-            border: `1px solid ${error ? '#ef4444' : '#cbd5e1'}`,
-            background: disabled ? '#f8fafc' : '#ffffff',
-            color: '#0f172a',
-            outline: 'none',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'border-color 0.15s ease-in-out',
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            ...style,
-          }}
+          className={`w-full rounded-lg bg-white border text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 ${
+            error ? 'border-rose-500 focus:border-rose-500' : 'border-slate-300 hover:border-slate-400 focus:border-indigo-600'
+          } ${className}`}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+            <option key={opt.value} value={opt.value} disabled={opt.disabled} className="bg-white text-slate-900">
               {opt.label}
             </option>
           ))}
         </select>
-        {error && <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', fontWeight: 500 }}>{error}</span>}
-        {!error && helperText && <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>{helperText}</span>}
+        {error && <span className="text-xs text-rose-600 font-medium">{error}</span>}
       </div>
     );
   }
 );
-
 Select.displayName = 'Select';

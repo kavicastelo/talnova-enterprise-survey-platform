@@ -55,7 +55,7 @@ export const ProjectSetupWizard: React.FC<Props> = ({ onSuccess, onCancel }) => 
       return;
     }
 
-    if (!formData.branding.companyName.trim()) {
+    if (!formData.branding.companyName?.trim()) {
       setValidationError('Company Name is required.');
       return;
     }

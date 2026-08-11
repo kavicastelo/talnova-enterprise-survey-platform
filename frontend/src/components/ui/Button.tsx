@@ -1,73 +1,50 @@
 import React from 'react';
-import { Spinner } from './Spinner';
+import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
+  children,
   variant = 'primary',
   size = 'md',
   isLoading = false,
-  icon,
-  children,
+  leftIcon,
+  rightIcon,
+  className = '',
   disabled,
-  style,
   ...props
 }) => {
-  const getVariantStyles = (): React.CSSProperties => {
-    switch (variant) {
-      case 'secondary':
-        return { background: '#e2e8f0', color: '#1e293b', border: '1px solid #cbd5e1' };
-      case 'outline':
-        return { background: 'transparent', color: '#1e3a8a', border: '1px solid #3b82f6' };
-      case 'danger':
-        return { background: '#ef4444', color: '#ffffff', border: 'none' };
-      case 'ghost':
-        return { background: 'transparent', color: '#475569', border: 'none' };
-      case 'primary':
-      default:
-        return { background: 'var(--tesp-primary-color, #1e3a8a)', color: '#ffffff', border: 'none' };
-    }
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
+
+  const variantStyles = {
+    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm focus:ring-indigo-500',
+    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 shadow-sm border border-slate-300 focus:ring-slate-400',
+    danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:ring-rose-500',
+    outline: 'border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400',
+    ghost: 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:ring-slate-400',
   };
 
-  const getSizeStyles = (): React.CSSProperties => {
-    switch (size) {
-      case 'sm':
-        return { padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px' };
-      case 'lg':
-        return { padding: '12px 24px', fontSize: '1rem', borderRadius: '10px' };
-      case 'md':
-      default:
-        return { padding: '9px 18px', fontSize: '0.875rem', borderRadius: '8px' };
-    }
+  const sizeStyles = {
+    sm: 'px-3 py-1.5 text-xs font-semibold gap-1.5',
+    md: 'px-4 py-2 text-sm gap-2',
+    lg: 'px-6 py-3 text-base gap-2.5',
   };
 
   return (
     <button
+      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || isLoading}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        fontWeight: 600,
-        cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
-        opacity: disabled || isLoading ? 0.65 : 1,
-        transition: 'all 0.15s ease-in-out',
-        boxShadow: variant === 'ghost' || variant === 'outline' ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        ...getVariantStyles(),
-        ...getSizeStyles(),
-        ...style,
-      }}
       {...props}
     >
-      {isLoading ? <Spinner size="sm" color={variant === 'primary' || variant === 'danger' ? '#ffffff' : '#3b82f6'} /> : icon}
+      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : leftIcon}
       {children}
+      {!isLoading && rightIcon}
     </button>
   );
 };

@@ -1,140 +1,107 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { AlertCircle, CheckCircle2, Info, X, AlertTriangle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastMessage {
   id: string;
   type: ToastType;
-  title?: string;
-  message: string;
-  duration?: number;
+  title: string;
+  description?: string;
 }
 
-interface ToastContextValue {
-  toasts: ToastMessage[];
-  showToast: (toast: Omit<ToastMessage, 'id'>) => void;
-  showSuccess: (message: string, title?: string) => void;
-  showError: (message: string, title?: string) => void;
-  showWarning: (message: string, title?: string) => void;
-  showInfo: (message: string, title?: string) => void;
-  dismissToast: (id: string) => void;
+interface ToastContextType {
+  showToast: (title: string, description?: string, type?: ToastType) => void;
+  showSuccess: (title: string, description?: string) => void;
+  showError: (title: string, description?: string) => void;
+  success: (title: string, description?: string) => void;
+  error: (title: string, description?: string) => void;
+  warning: (title: string, description?: string) => void;
+  info: (title: string, description?: string) => void;
+  removeToast: (id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const dismissToast = useCallback((id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const showToast = useCallback(
-    (toast: Omit<ToastMessage, 'id'>) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      const newToast: ToastMessage = { ...toast, id };
-      setToasts((prev) => [...prev.slice(-4), newToast]); // keep max 5
+    (title: string, description?: string, type: ToastType = 'info') => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      setToasts((prev) => [...prev, { id, type, title, description }]);
 
-      const duration = toast.duration ?? 5000;
-      if (duration > 0) {
-        setTimeout(() => {
-          dismissToast(id);
-        }, duration);
-      }
+      setTimeout(() => {
+        removeToast(id);
+      }, 5000);
     },
-    [dismissToast]
+    [removeToast]
   );
 
-  const showSuccess = useCallback((message: string, title?: string) => showToast({ type: 'success', message, title }), [showToast]);
-  const showError = useCallback((message: string, title?: string) => showToast({ type: 'error', message, title }), [showToast]);
-  const showWarning = useCallback((message: string, title?: string) => showToast({ type: 'warning', message, title }), [showToast]);
-  const showInfo = useCallback((message: string, title?: string) => showToast({ type: 'info', message, title }), [showToast]);
+  const success = useCallback((title: string, description?: string) => showToast(title, description, 'success'), [showToast]);
+  const error = useCallback((title: string, description?: string) => showToast(title, description, 'error'), [showToast]);
+  const warning = useCallback((title: string, description?: string) => showToast(title, description, 'warning'), [showToast]);
+  const info = useCallback((title: string, description?: string) => showToast(title, description, 'info'), [showToast]);
 
   return (
     <ToastContext.Provider
       value={{
-        toasts,
         showToast,
-        showSuccess,
-        showError,
-        showWarning,
-        showInfo,
-        dismissToast,
+        showSuccess: success,
+        showError: error,
+        success,
+        error,
+        warning,
+        info,
+        removeToast,
       }}
     >
       {children}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start p-4 rounded-xl shadow-xl border text-sm transition-all duration-300 transform translate-y-0 ${
+              toast.type === 'success'
+                ? 'bg-white border-emerald-300 text-slate-800'
+                : toast.type === 'error'
+                ? 'bg-white border-rose-300 text-slate-800'
+                : toast.type === 'warning'
+                ? 'bg-white border-amber-300 text-slate-800'
+                : 'bg-white border-slate-300 text-slate-800'
+            }`}
+          >
+            <div className="mr-3 mt-0.5 flex-shrink-0">
+              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-600" />}
+              {toast.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-600" />}
+              {toast.type === 'info' && <Info className="w-5 h-5 text-sky-600" />}
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-slate-900">{toast.title}</p>
+              {toast.description && <p className="text-xs mt-1 text-slate-500">{toast.description}</p>}
+            </div>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="ml-2 text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-md"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 };
 
-export const useToast = (): ToastContextValue => {
+export const useToast = (): ToastContextType => {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
-};
-
-const ToastContainer: React.FC<{ toasts: ToastMessage[]; onDismiss: (id: string) => void }> = ({ toasts, onDismiss }) => {
-  if (toasts.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        maxWidth: '400px',
-        width: '100%',
-        pointerEvents: 'none',
-      }}
-    >
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          style={{
-            pointerEvents: 'auto',
-            background: toast.type === 'error' ? '#fef2f2' : toast.type === 'success' ? '#ecfdf5' : toast.type === 'warning' ? '#fffbeb' : '#f0f9ff',
-            border: `1px solid ${
-              toast.type === 'error' ? '#fca5a5' : toast.type === 'success' ? '#6ee7b7' : toast.type === 'warning' ? '#fde68a' : '#7dd3fc'
-            }`,
-            color: toast.type === 'error' ? '#991b1b' : toast.type === 'success' ? '#065f46' : toast.type === 'warning' ? '#92400e' : '#075985',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            fontSize: '0.875rem',
-            animation: 'fadeIn 0.2s ease-in-out',
-          }}
-        >
-          <div>
-            {toast.title && <div style={{ fontWeight: 700, marginBottom: '2px' }}>{toast.title}</div>}
-            <div>{toast.message}</div>
-          </div>
-          <button
-            onClick={() => onDismiss(toast.id)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '1.1rem',
-              color: 'inherit',
-              marginLeft: '12px',
-              lineHeight: 1,
-            }}
-          >
-            &times;
-          </button>
-        </div>
-      ))}
-    </div>
-  );
 };

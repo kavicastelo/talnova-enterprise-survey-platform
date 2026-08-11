@@ -1,13 +1,23 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { MainPlatformLayout } from '../layouts/MainPlatformLayout';
+import { SuperAdminLayout } from '../layouts/SuperAdminLayout';
+import { ConsultantLayout } from '../layouts/ConsultantLayout';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { RoleGate } from '../components/auth/RoleGate';
 import { FeatureGate } from '../components/auth/FeatureGate';
 
-// Pages
+// Auth Pages
 import { LoginPage } from '../pages/auth/LoginPage';
 import { AccessDeniedPage } from '../pages/auth/AccessDeniedPage';
+
+// Super Admin Pages
+import { SuperAdminDashboardPage } from '../features/super-admin/pages/SuperAdminDashboardPage';
+
+// Consultant Pages
+import { ConsultantDashboardPage } from '../features/consultant/pages/ConsultantDashboardPage';
+
+// General Executive Dashboard Page
 import { ExecutiveDashboardPage } from '../pages/dashboard/ExecutiveDashboardPage';
 
 // FEAT-001 Project Config Domain Pages
@@ -44,7 +54,7 @@ import { ActionKanbanBoardPage } from '../features/action-planning/pages/ActionK
 import { NotificationLogsPage } from '../features/notifications/pages/NotificationLogsPage';
 import { AuditTrailPage } from '../features/audit/pages/AuditTrailPage';
 
-// Domain Component Wrappers
+// Public Taker Pages
 import { KioskPlayerPage } from '../components/player/KioskPlayerPage';
 import { SurveyPlayerPage } from '../components/player/SurveyPlayerPage';
 import { SurveyResponse } from '../types/survey';
@@ -63,7 +73,7 @@ const DEFAULT_DEMO_SURVEY: SurveyResponse = {
 };
 
 export const router = createBrowserRouter([
-  // Public Taker Routes
+  // Public Respondent Taker Routes
   {
     path: '/s/:token',
     element: (
@@ -97,7 +107,49 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Authenticated Platform Routes
+  // Super Admin Dedicated Console Routes
+  {
+    path: '/super-admin',
+    element: (
+      <ProtectedRoute>
+        <RoleGate allowedRoles={['SUPER_ADMIN']}>
+          <SuperAdminLayout />
+        </RoleGate>
+      </ProtectedRoute>
+    ),
+    children: [
+      { path: '', element: <Navigate to="/super-admin/dashboard" replace /> },
+      { path: 'dashboard', element: <SuperAdminDashboardPage /> },
+      { path: 'projects', element: <ProjectProvisioningPage /> },
+      { path: 'consultants', element: <ConsultantDashboardPage /> },
+      { path: 'feature-flags', element: <FeatureFlagPage /> },
+      { path: 'audit', element: <AuditTrailPage /> },
+      { path: 'system', element: <SuperAdminDashboardPage /> },
+    ],
+  },
+
+  // Consultant Dedicated Portal Routes
+  {
+    path: '/consultant',
+    element: (
+      <ProtectedRoute>
+        <RoleGate allowedRoles={['SUPER_ADMIN', 'CONSULTANT_DAASH']}>
+          <ConsultantLayout />
+        </RoleGate>
+      </ProtectedRoute>
+    ),
+    children: [
+      { path: '', element: <Navigate to="/consultant/dashboard" replace /> },
+      { path: 'dashboard', element: <ConsultantDashboardPage /> },
+      { path: 'projects', element: <ProjectProvisioningPage /> },
+      { path: 'analytics', element: <AnalyticsDashboardPage /> },
+      { path: 'ai-insights', element: <AiAnalyticsPage /> },
+      { path: 'reports', element: <ReportingCenterPage /> },
+      { path: 'actions', element: <ActionKanbanBoardPage /> },
+    ],
+  },
+
+  // Standard Authenticated Platform Routes
   {
     element: (
       <ProtectedRoute>

@@ -71,14 +71,14 @@ export const ExecutiveSummaryDrawer: React.FC<ExecutiveSummaryDrawerProps> = ({
       <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
         
         {/* Drawer Header */}
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+        <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
           <div>
-            <span className="text-xs font-bold tracking-wider text-indigo-400 uppercase">Node Scope: {summary.nodeScope}</span>
-            <h2 className="text-xl font-bold mt-1">{summary.summaryTitle}</h2>
+            <span className="text-xs font-bold tracking-wider text-indigo-600 uppercase">Node Scope: {summary.nodeScope}</span>
+            <h2 className="text-xl font-bold mt-1 text-slate-900">{summary.summaryTitle}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             ✕
           </button>

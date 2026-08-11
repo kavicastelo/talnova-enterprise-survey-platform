@@ -1,156 +1,131 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ProjectTenant } from '../types/tenant';
-import { Branding, FeatureFlags } from '../types/projectConfig';
+import { setProjectIdGetter } from '../core/api/client';
+import { Branding, FeatureFlags, ProjectTenant } from '../types/projectConfig';
 
-interface TenantContextValue {
-  activeProject: ProjectTenant | null;
+export type { FeatureFlags, Branding, ProjectTenant };
+
+export type TenantBranding = Branding;
+export type ProjectInfo = ProjectTenant;
+
+interface TenantContextType {
+  activeProjectId: string;
+  activeProject: ProjectTenant;
+  projects: ProjectTenant[];
   projectsList: ProjectTenant[];
   branding: Branding;
   featureFlags: FeatureFlags;
-  isLoading: boolean;
-  switchProject: (projectId: string) => Promise<void>;
-  updateBranding: (branding: Branding) => void;
-  updateFeatureFlags: (flags: FeatureFlags) => void;
+  switchProject: (projectId: string) => void;
+  updateBranding: (branding: Partial<Branding>) => void;
+  updateFeatureFlags: (flags: Partial<FeatureFlags>) => void;
+  isLoadingProjects: boolean;
 }
+
+const DEFAULT_BRANDING: Branding = {
+  companyName: 'Aitken Spence PLC',
+  primaryColor: '#4f46e5',
+  secondaryColor: '#0284c7',
+  fontFamily: 'Inter',
+};
+
+const DEFAULT_FLAGS: FeatureFlags = {
+  aiAnalyticsEnabled: true,
+  actionPlanningEnabled: true,
+  kioskModeEnabled: true,
+  hrisSyncEnabled: true,
+  gdprAnonymizationEnabled: true,
+  smsDistributionEnabled: true,
+  emailDistributionEnabled: true,
+  teamsDistributionEnabled: true,
+  slackDistributionEnabled: true,
+};
 
 const DEFAULT_PROJECTS: ProjectTenant[] = [
   {
+    id: 'PRJ-99201',
     projectId: 'PRJ-99201',
-    projectName: 'Aitken Spence Enterprise Survey 2026',
-    description: 'Group-wide annual employee engagement and culture audit.',
+    name: 'Aitken Spence Enterprise Portal',
+    projectName: 'Aitken Spence Enterprise Portal',
+    code: 'ASP-ENT',
     status: 'ACTIVE',
-    branding: {
-      companyName: 'Aitken Spence PLC',
-      logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-99201/logo.png',
-      primaryColor: '#1E3A8A',
-      secondaryColor: '#3B82F6',
-    },
-    features: {
-      aiAnalyticsEnabled: true,
-      actionPlanningEnabled: true,
-      kioskModeEnabled: false,
-      smsDistributionEnabled: true,
-    },
+    branding: DEFAULT_BRANDING,
+    features: DEFAULT_FLAGS,
     supportedLocales: ['en-US', 'si-LK', 'ta-LK'],
     defaultLocale: 'en-US',
   },
   {
+    id: 'PRJ-88102',
     projectId: 'PRJ-88102',
-    projectName: 'Commercial Bank Pulse Audit Q3',
-    description: 'Quarterly pulse survey for digital transformation readiness.',
+    name: 'Talnova Global Workforce',
+    projectName: 'Talnova Global Workforce',
+    code: 'TAL-GLB',
     status: 'ACTIVE',
-    branding: {
-      companyName: 'Commercial Bank PLC',
-      logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-88102/logo.png',
-      primaryColor: '#065F46',
-      secondaryColor: '#10B981',
-    },
-    features: {
-      aiAnalyticsEnabled: true,
-      actionPlanningEnabled: false,
-      kioskModeEnabled: true,
-      smsDistributionEnabled: false,
-    },
-    supportedLocales: ['en-US', 'si-LK'],
+    branding: DEFAULT_BRANDING,
+    features: DEFAULT_FLAGS,
+    supportedLocales: ['en-US'],
     defaultLocale: 'en-US',
   },
   {
-    projectId: 'PRJ-77403',
-    projectName: 'Dilmah Tea Global Leadership Survey',
-    description: 'Leadership 360-degree feedback and alignment survey.',
-    status: 'ACTIVE',
-    branding: {
-      companyName: 'Dilmah Ceylon Tea Company',
-      logoUrl: 'https://s3.amazonaws.com/tesp-assets/prj-77403/logo.png',
-      primaryColor: '#7C2D12',
-      secondaryColor: '#F97316',
-    },
-    features: {
-      aiAnalyticsEnabled: false,
-      actionPlanningEnabled: true,
-      kioskModeEnabled: false,
-      smsDistributionEnabled: true,
-    },
+    id: 'PRJ-77303',
+    projectId: 'PRJ-77303',
+    name: 'Asia Telecom Operations',
+    projectName: 'Asia Telecom Operations',
+    code: 'ATO-OPS',
+    status: 'PROVISIONING',
+    branding: DEFAULT_BRANDING,
+    features: DEFAULT_FLAGS,
     supportedLocales: ['en-US'],
     defaultLocale: 'en-US',
   },
 ];
 
-const TenantContext = createContext<TenantContextValue | undefined>(undefined);
+const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const [projectsList] = useState<ProjectTenant[]>(DEFAULT_PROJECTS);
-  const [activeProject, setActiveProject] = useState<ProjectTenant | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeProjectId, setActiveProjectId] = useState<string>(() => {
+    return localStorage.getItem('tesp_project_id') || 'PRJ-99201';
+  });
+  const [projects] = useState<ProjectTenant[]>(DEFAULT_PROJECTS);
+  const [branding, setBranding] = useState<Branding>(DEFAULT_BRANDING);
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(DEFAULT_FLAGS);
+  const [isLoadingProjects] = useState<boolean>(false);
 
-  const applyThemeBranding = (branding: Branding) => {
-    document.documentElement.style.setProperty('--tesp-primary-color', branding.primaryColor);
-    document.documentElement.style.setProperty('--tesp-secondary-color', branding.secondaryColor);
-  };
+  const activeProject = projects.find((p) => p.projectId === activeProjectId) || projects[0];
 
   useEffect(() => {
-    const savedProjectId = localStorage.getItem('tesp_project_id') || 'PRJ-99201';
-    const matched = projectsList.find((p) => p.projectId === savedProjectId) || projectsList[0];
+    setProjectIdGetter(() => activeProjectId);
+    localStorage.setItem('tesp_project_id', activeProjectId);
+  }, [activeProjectId]);
 
-    setActiveProject(matched);
-    applyThemeBranding(matched.branding);
-    localStorage.setItem('tesp_project_id', matched.projectId);
-    setIsLoading(false);
-  }, [projectsList]);
+  const switchProject = (projectId: string) => {
+    if (projectId === activeProjectId) return;
+    setActiveProjectId(projectId);
+    localStorage.setItem('tesp_project_id', projectId);
+    queryClient.invalidateQueries();
+  };
 
-  const switchProject = useCallback(
-    async (projectId: string) => {
-      setIsLoading(true);
-      const target = projectsList.find((p) => p.projectId === projectId);
-      if (!target) {
-        setIsLoading(false);
-        throw new Error(`Project with ID ${projectId} not found`);
-      }
+  const updateBranding = (newBranding: Partial<Branding>) => {
+    setBranding((prev) => ({ ...prev, ...newBranding }));
+  };
 
-      // CRITICAL STEP: Cancel in-flight queries and clear query cache to prevent cross-tenant stale data
-      await queryClient.cancelQueries();
-      queryClient.clear();
-
-      setActiveProject(target);
-      applyThemeBranding(target.branding);
-      localStorage.setItem('tesp_project_id', target.projectId);
-      setIsLoading(false);
-    },
-    [projectsList, queryClient]
-  );
-
-  const updateBranding = useCallback((branding: Branding) => {
-    setActiveProject((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, branding };
-      applyThemeBranding(branding);
-      return updated;
-    });
-  }, []);
-
-  const updateFeatureFlags = useCallback((features: FeatureFlags) => {
-    setActiveProject((prev) => {
-      if (!prev) return null;
-      return { ...prev, features };
-    });
-  }, []);
-
-  const branding = activeProject?.branding || DEFAULT_PROJECTS[0].branding;
-  const featureFlags = activeProject?.features || DEFAULT_PROJECTS[0].features;
+  const updateFeatureFlags = (newFlags: Partial<FeatureFlags>) => {
+    setFeatureFlags((prev) => ({ ...prev, ...newFlags }));
+  };
 
   return (
     <TenantContext.Provider
       value={{
+        activeProjectId,
         activeProject,
-        projectsList,
+        projects,
+        projectsList: projects,
         branding,
         featureFlags,
-        isLoading,
         switchProject,
         updateBranding,
         updateFeatureFlags,
+        isLoadingProjects,
       }}
     >
       {children}
@@ -158,7 +133,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-export const useTenant = (): TenantContextValue => {
+export const useTenant = (): TenantContextType => {
   const context = useContext(TenantContext);
   if (!context) {
     throw new Error('useTenant must be used within a TenantProvider');

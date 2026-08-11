@@ -142,7 +142,7 @@ export const SentimentAnalyticsPanel: React.FC<SentimentAnalyticsPanelProps> = (
                 }`}
               >
                 <span>{cluster.themeName}</span>
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-black/10">
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
                   {cluster.frequency}
                 </span>
               </button>
