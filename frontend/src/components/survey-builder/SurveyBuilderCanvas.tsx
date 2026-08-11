@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   QuestionType,
   SurveyPage,
@@ -25,10 +25,64 @@ import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Skeleton } from '../ui/Skeleton';
 import { ErrorState } from '../ui/ErrorState';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { QuestionLibraryModal } from './QuestionLibraryModal';
 
 interface SurveyBuilderCanvasProps {
   projectId: string;
   surveyId: string;
+}
+
+/** Validates page jump graph for circular logic cycles (BR-SRV-004) */
+function detectBranchingCycle(pages: SurveyPage[]): { hasCycle: boolean; cycleNodeId?: string } {
+  const adj = new Map<string, string[]>();
+  pages.forEach((p, idx) => {
+    const targets: string[] = [];
+    if (idx + 1 < pages.length) {
+      targets.push(pages[idx + 1].pageId);
+    }
+    p.sections.forEach((sec) => {
+      sec.questions.forEach((q) => {
+        if (q.logicRules) {
+          q.logicRules.forEach((rule) => {
+            if (rule.targetPageId && !targets.includes(rule.targetPageId)) {
+              targets.push(rule.targetPageId);
+            }
+          });
+        }
+      });
+    });
+    adj.set(p.pageId, targets);
+  });
+
+  const visited = new Set<string>();
+  const recStack = new Set<string>();
+
+  function dfs(nodeId: string): boolean {
+    if (recStack.has(nodeId)) return true;
+    if (visited.has(nodeId)) return false;
+
+    visited.add(nodeId);
+    recStack.add(nodeId);
+
+    const neighbors = adj.get(nodeId) || [];
+    for (const neighbor of neighbors) {
+      if (dfs(neighbor)) return true;
+    }
+
+    recStack.delete(nodeId);
+    return false;
+  }
+
+  for (const page of pages) {
+    if (!visited.has(page.pageId)) {
+      if (dfs(page.pageId)) {
+        return { hasCycle: true, cycleNodeId: page.pageId };
+      }
+    }
+  }
+
+  return { hasCycle: false };
 }
 
 export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
@@ -81,6 +135,8 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
     },
   ]);
 
+  const cycleCheck = useMemo(() => detectBranchingCycle(pages), [pages]);
+
   const [selectedQuestion, setSelectedQuestion] = useState<{
     pageIndex: number;
     sectionIndex: number;
@@ -100,6 +156,73 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
   const isPublished = currentStatus === 'PUBLISHED';
 
   // Helper functions
+  const duplicateQuestion = (pIdx: number, sIdx: number, qIdx: number) => {
+    if (isPublished) return;
+    const targetQ = pages[pIdx].sections[sIdx].questions[qIdx];
+    const duplicated: SurveyQuestion = {
+      ...targetQ,
+      questionId: `Q-COPY-${Date.now().toString().slice(-4)}`,
+      prompt: { ...targetQ.prompt, 'en-US': `${targetQ.prompt['en-US'] || ''} (Copy)` },
+      questionOrder: targetQ.questionOrder + 1,
+    };
+    const updatedPages = [...pages];
+    updatedPages[pIdx].sections[sIdx].questions.splice(qIdx + 1, 0, duplicated);
+    setPages(updatedPages);
+    setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: qIdx + 1 });
+  };
+
+  const deleteQuestion = (pIdx: number, sIdx: number, qIdx: number) => {
+    if (isPublished) return;
+    const updatedPages = [...pages];
+    updatedPages[pIdx].sections[sIdx].questions.splice(qIdx, 1);
+    setPages(updatedPages);
+    if (
+      selectedQuestion?.pageIndex === pIdx &&
+      selectedQuestion?.sectionIndex === sIdx &&
+      selectedQuestion?.questionIndex === qIdx
+    ) {
+      setSelectedQuestion(null);
+    }
+  };
+
+  const moveQuestion = (pIdx: number, sIdx: number, qIdx: number, direction: 'UP' | 'DOWN') => {
+    if (isPublished) return;
+    const questions = pages[pIdx].sections[sIdx].questions;
+    const targetIdx = direction === 'UP' ? qIdx - 1 : qIdx + 1;
+    if (targetIdx < 0 || targetIdx >= questions.length) return;
+
+    const updatedPages = [...pages];
+    const item = updatedPages[pIdx].sections[sIdx].questions.splice(qIdx, 1)[0];
+    updatedPages[pIdx].sections[sIdx].questions.splice(targetIdx, 0, item);
+    setPages(updatedPages);
+    setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: targetIdx });
+  };
+
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [targetLocation, setTargetLocation] = useState<{ pIdx: number; sIdx: number }>({ pIdx: 0, sIdx: 0 });
+
+  const openLibraryModal = (pIdx: number, sIdx: number) => {
+    if (isPublished) return;
+    setTargetLocation({ pIdx, sIdx });
+    setIsLibraryModalOpen(true);
+  };
+
+  const handleInsertLibraryTemplate = (template: SurveyQuestion) => {
+    const { pIdx, sIdx } = targetLocation;
+    const updatedPages = [...pages];
+    const section = updatedPages[pIdx]?.sections[sIdx];
+    if (section) {
+      template.questionOrder = section.questions.length + 1;
+      section.questions.push(template);
+      setPages(updatedPages);
+      setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: section.questions.length - 1 });
+    }
+  };
+
+  const addLibraryQuestion = (pIdx: number, sIdx: number) => {
+    openLibraryModal(pIdx, sIdx);
+  };
+
   const addPage = () => {
     if (isPublished) return;
     const newPageOrder = pages.length + 1;
@@ -165,7 +288,55 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
     saveDraftMutation.mutate({ surveyId, payload });
   };
 
-  const handlePublish = () => {
+  const [isPublishConfirmOpen, setIsPublishConfirmOpen] = useState(false);
+  const [publishValidationError, setPublishValidationError] = useState<string | null>(null);
+
+  const validateSurveyCompleteness = (): { isValid: boolean; error?: string } => {
+    if (!pages || pages.length === 0) {
+      return { isValid: false, error: 'Survey must contain at least 1 Page (VR-SRV-002).' };
+    }
+
+    let totalSections = 0;
+    let totalQuestions = 0;
+    let missingGroupQId: string | null = null;
+
+    for (const page of pages) {
+      totalSections += page.sections.length;
+      for (const sec of page.sections) {
+        totalQuestions += sec.questions.length;
+        for (const q of sec.questions) {
+          if (['LIKERT', 'NPS', 'MATRIX'].includes(q.type) && !q.groupId?.trim()) {
+            missingGroupQId = q.questionId;
+          }
+        }
+      }
+    }
+
+    if (totalSections === 0) {
+      return { isValid: false, error: 'Survey must contain at least 1 Section (VR-SRV-002).' };
+    }
+    if (totalQuestions === 0) {
+      return { isValid: false, error: 'Survey must contain at least 1 Question before publishing (VR-SRV-002).' };
+    }
+    if (missingGroupQId) {
+      return { isValid: false, error: `Question ${missingGroupQId} requires a valid Question Group ID for quantitative analytics (BR-SRV-002).` };
+    }
+
+    return { isValid: true };
+  };
+
+  const handleOpenPublishConfirm = () => {
+    const check = validateSurveyCompleteness();
+    if (!check.isValid) {
+      setPublishValidationError(check.error || 'Completeness check failed.');
+      return;
+    }
+    setPublishValidationError(null);
+    setIsPublishConfirmOpen(true);
+  };
+
+  const handleConfirmPublish = () => {
+    setIsPublishConfirmOpen(false);
     publishMutation.mutate({ surveyId, projectId });
   };
 
@@ -286,7 +457,7 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                 <Button variant="secondary" onClick={handleSaveDraft} isLoading={saveDraftMutation.isPending}>
                   Save Draft
                 </Button>
-                <Button variant="primary" onClick={handlePublish} isLoading={publishMutation.isPending}>
+                <Button variant="primary" onClick={handleOpenPublishConfirm} isLoading={publishMutation.isPending}>
                   Publish Survey
                 </Button>
               </>
@@ -294,6 +465,19 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
           </div>
         </div>
       </Card>
+
+      {publishValidationError && (
+        <Alert type="error" title="Publish Validation Guard Failed (VR-SRV-002)">
+          {publishValidationError}
+        </Alert>
+      )}
+
+      {/* DAG Cycle Prevention Alert (BR-SRV-004) */}
+      {cycleCheck.hasCycle && (
+        <Alert type="error" title="Circular Skip Logic Cycle Detected (BR-SRV-004)">
+          A circular page jump loop was detected starting at <code>{cycleCheck.cycleNodeId}</code>. Please review skip logic rules to ensure forward-only navigation DAG.
+        </Alert>
+      )}
 
       {/* Published Structural Lock Alert */}
       {isPublished && (
@@ -371,41 +555,108 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
                       )}
                     </div>
 
-                    {/* Question Cards */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {section.questions.map((q, qIdx) => {
-                        const isSelected =
-                          selectedQuestion?.pageIndex === pIdx &&
-                          selectedQuestion?.sectionIndex === sIdx &&
-                          selectedQuestion?.questionIndex === qIdx;
-
-                        return (
-                          <div
-                            key={q.questionId}
-                            onClick={() => setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: qIdx })}
-                            style={{
-                              padding: '12px',
-                              borderRadius: '8px',
-                              background: isSelected ? '#eff6ff' : '#ffffff',
-                              border: `2px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Badge variant="neutral">{q.type}</Badge>
-                                <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
-                                  {q.prompt[activeLocale] || q.prompt['en-US']}
-                                </span>
-                              </div>
-                            </div>
+                    {/* Question Cards or Section Empty State */}
+                    {section.questions.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed #cbd5e1', borderRadius: '8px', background: '#ffffff' }}>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b' }}>
+                          No questions added to this section yet.
+                        </p>
+                        {!isPublished && (
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <Button variant="primary" size="sm" onClick={() => addQuestion(pIdx, sIdx)}>
+                              + Add First Question
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => addLibraryQuestion(pIdx, sIdx)}>
+                              📚 Pick from Library
+                            </Button>
                           </div>
-                        );
-                      })}
-                    </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {section.questions.map((q, qIdx) => {
+                          const isSelected =
+                            selectedQuestion?.pageIndex === pIdx &&
+                            selectedQuestion?.sectionIndex === sIdx &&
+                            selectedQuestion?.questionIndex === qIdx;
+
+                          return (
+                            <div
+                              key={q.questionId}
+                              onClick={() => setSelectedQuestion({ pageIndex: pIdx, sectionIndex: sIdx, questionIndex: qIdx })}
+                              style={{
+                                padding: '12px',
+                                borderRadius: '8px',
+                                background: isSelected ? '#eff6ff' : '#ffffff',
+                                border: `2px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Badge variant="neutral">{q.type}</Badge>
+                                <div>
+                                  <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {q.prompt[activeLocale] || q.prompt['en-US']}
+                                    {q.logicRules && q.logicRules.length > 0 && (
+                                      <Badge variant="info">
+                                        ⚡ Skip Logic ({q.logicRules.length})
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {q.groupId && (
+                                    <span style={{ fontSize: '0.725rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                                      Group: {q.groupId}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {!isPublished && (
+                                <div style={{ display: 'flex', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    type="button"
+                                    title="Move Question Up"
+                                    disabled={qIdx === 0}
+                                    onClick={() => moveQuestion(pIdx, sIdx, qIdx, 'UP')}
+                                    style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '4px', padding: '2px 6px', cursor: qIdx === 0 ? 'not-allowed' : 'pointer', opacity: qIdx === 0 ? 0.4 : 1 }}
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Move Question Down"
+                                    disabled={qIdx === section.questions.length - 1}
+                                    onClick={() => moveQuestion(pIdx, sIdx, qIdx, 'DOWN')}
+                                    style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '4px', padding: '2px 6px', cursor: qIdx === section.questions.length - 1 ? 'not-allowed' : 'pointer', opacity: qIdx === section.questions.length - 1 ? 0.4 : 1 }}
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Duplicate Question"
+                                    onClick={() => duplicateQuestion(pIdx, sIdx, qIdx)}
+                                    style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '4px', padding: '2px 6px', cursor: 'pointer' }}
+                                  >
+                                    📋
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Delete Question"
+                                    onClick={() => deleteQuestion(pIdx, sIdx, qIdx)}
+                                    style={{ border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', borderRadius: '4px', padding: '2px 6px', cursor: 'pointer' }}
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -441,30 +692,94 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
               />
 
               <div>
-                <Input
-                  label="Question Group ID (Mandatory for Quantitative)"
-                  value={activeQuestion.groupId || ''}
+                <Select
+                  label="Question Group Dimension (Required for Quantitative)"
+                  value={activeQuestion.groupId || 'GRP-GENERAL'}
                   onChange={(e) => updateActiveQuestion('groupId', e.target.value)}
-                  placeholder="GRP-LEADERSHIP"
+                  options={[
+                    { value: 'GRP-LEADERSHIP', label: 'Leadership & Strategic Alignment (GRP-LEADERSHIP)' },
+                    { value: 'GRP-CULTURE', label: 'Workplace Culture & Belonging (GRP-CULTURE)' },
+                    { value: 'GRP-WELLBEING', label: 'Employee Wellbeing & Balance (GRP-WELLBEING)' },
+                    { value: 'GRP-MANAGEMENT', label: 'Managerial Support & Direction (GRP-MANAGEMENT)' },
+                    { value: 'GRP-CAREER', label: 'Career Growth & Learning (GRP-CAREER)' },
+                    { value: 'GRP-COMPENSATION', label: 'Rewards & Recognition (GRP-COMPENSATION)' },
+                    { value: 'GRP-GENERAL', label: 'General Feedback (GRP-GENERAL)' },
+                  ]}
                   disabled={isPublished}
                 />
                 {['LIKERT', 'NPS', 'MATRIX'].includes(activeQuestion.type) && !activeQuestion.groupId?.trim() && (
                   <p style={{ color: '#dc2626', fontSize: '0.75rem', marginTop: '4px' }}>
-                    ⚠️ BR-SRV-002: Quantitative questions require a valid Question Group ID for analytics aggregation.
+                    ⚠️ BR-SRV-002: Quantitative questions require a valid Question Group for analytics aggregation.
                   </p>
                 )}
               </div>
 
-              <Textarea
-                label={`Prompt (${activeLocale})`}
-                rows={3}
-                value={activeQuestion.prompt[activeLocale] || ''}
-                onChange={(e) => {
-                  const updated = { ...activeQuestion.prompt, [activeLocale]: e.target.value };
-                  updateActiveQuestion('prompt', updated);
-                }}
-                disabled={isPublished}
-              />
+              {/* Multi-Language Translation Dictionary Status Chips */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>
+                    Localization Dictionary Status ({activeLocale})
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: activeQuestion.prompt['en-US']?.trim() ? '#dcfce7' : '#fee2e2',
+                        color: activeQuestion.prompt['en-US']?.trim() ? '#15803d' : '#b91c1c',
+                      }}
+                      title="Default Locale (en-US)"
+                    >
+                      EN {activeQuestion.prompt['en-US']?.trim() ? '✓' : '✗'}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: activeQuestion.prompt['si-LK']?.trim() ? '#e0e7ff' : '#f1f5f9',
+                        color: activeQuestion.prompt['si-LK']?.trim() ? '#3730a3' : '#64748b',
+                      }}
+                      title="Sinhala (si-LK)"
+                    >
+                      SI {activeQuestion.prompt['si-LK']?.trim() ? '✓' : '—'}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: activeQuestion.prompt['ta-LK']?.trim() ? '#e0e7ff' : '#f1f5f9',
+                        color: activeQuestion.prompt['ta-LK']?.trim() ? '#3730a3' : '#64748b',
+                      }}
+                      title="Tamil (ta-LK)"
+                    >
+                      TA {activeQuestion.prompt['ta-LK']?.trim() ? '✓' : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                <Textarea
+                  label={`Prompt (${activeLocale})`}
+                  rows={3}
+                  value={activeQuestion.prompt[activeLocale] || ''}
+                  onChange={(e) => {
+                    const updated = { ...activeQuestion.prompt, [activeLocale]: e.target.value };
+                    updateActiveQuestion('prompt', updated);
+                  }}
+                  disabled={isPublished}
+                />
+
+                {!activeQuestion.prompt['en-US']?.trim() && (
+                  <p style={{ color: '#dc2626', fontSize: '0.75rem', marginTop: '4px' }}>
+                    ⚠️ VR-SRV-004: English (en-US) prompt is required as the default fallback locale before saving/publishing.
+                  </p>
+                )}
+              </div>
 
               {/* Declarative Branching Logic Rules Editor */}
               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}>
@@ -633,6 +948,24 @@ export const SurveyBuilderCanvas: React.FC<SurveyBuilderCanvasProps> = ({
         onClose={() => setIsSimulatorOpen(false)}
         pages={pages}
         defaultLocale={activeLocale}
+      />
+
+      {/* Publish Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isPublishConfirmOpen}
+        onClose={() => setIsPublishConfirmOpen(false)}
+        onConfirm={handleConfirmPublish}
+        title={`Publish Survey Version ${currentVersion}`}
+        message={`Are you sure you want to publish Survey Version ${currentVersion}? Publishing freezes questionnaire AST structure and locks edits (BR-SRV-001). Active distribution campaigns will begin consuming this version.`}
+        confirmText="Confirm & Freeze Version"
+        isLoading={publishMutation.isPending}
+      />
+
+      {/* Question Library Catalog Modal */}
+      <QuestionLibraryModal
+        isOpen={isLibraryModalOpen}
+        onClose={() => setIsLibraryModalOpen(false)}
+        onSelectTemplate={handleInsertLibraryTemplate}
       />
     </div>
   );

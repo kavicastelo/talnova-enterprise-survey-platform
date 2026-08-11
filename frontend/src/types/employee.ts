@@ -64,6 +64,8 @@ export interface HeaderMappingRecommendation {
   isCoreField: boolean;
 }
 
+export type HeaderMapping = HeaderMappingRecommendation;
+
 export interface HeaderMappingResponse {
   mappings: HeaderMappingRecommendation[];
   overallConfidence: number;

@@ -64,8 +64,8 @@ export const EmployeeRosterPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Employee Roster & Demographic Attribute Studio"
-        subtitle={`Manage workforce profiles, CSFLE PII encryption, matrix reporting lines, and HRIS sync for ${activeProject?.projectId || 'Active Project'}`}
+        title="Employee Roster & Demographic Directory"
+        subtitle={`Manage workforce profiles, department assignments, demographic attributes, and automated HRIS synchronization.`}
       />
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -99,22 +99,40 @@ export const EmployeeRosterPage: React.FC = () => {
 
         {activeTab === 'hris' && (
           <Card variant="bordered" padding="24px">
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Automated HRIS Roster Synchronization
-              </h3>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
-                Synchronize employee profiles automatically from Workday RaaS API, SAP SuccessFactors OData, or BambooHR.
-              </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Automated HRIS Roster Synchronization
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                  Synchronize workforce directory profiles automatically from Workday RaaS API, SAP SuccessFactors OData, or BambooHR.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', padding: '8px 14px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#16a34a', display: 'inline-block' }}></span>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534' }}>Automated Connector Active</div>
+                  <div style={{ fontSize: '0.725rem', color: '#15803d' }}>Nightly Schedule: 02:00 UTC (Redis Cron Engine)</div>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleHrisSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '600px' }}>
+            <form onSubmit={handleHrisSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '680px' }}>
               <Select
                 label="HRIS System Provider"
                 value={hrisForm.provider}
-                onChange={(e) => setHrisForm({ ...hrisForm, provider: e.target.value as any })}
+                onChange={(e) => {
+                  const p = e.target.value as any;
+                  let defaultUrl = '';
+                  if (p === 'WORKDAY_RAAS') defaultUrl = 'https://wd2-impl-services1.workday.com/ccx/service/customreport2/tenant/user/RaaS_Employee_Roster?format=json';
+                  else if (p === 'SUCCESSFACTORS_ODATA') defaultUrl = 'https://api.successfactors.eu/odata/v2/User?$format=json';
+                  else if (p === 'BAMBOOHR') defaultUrl = 'https://api.bamboohr.com/api/gateway.php/company/v1/employees/directory';
+
+                  setHrisForm({ ...hrisForm, provider: p, apiEndpoint: defaultUrl });
+                }}
                 options={[
-                  { value: 'WORKDAY_RAAS', label: 'Workday RaaS Custom Report API' },
+                  { value: 'WORKDAY_RAAS', label: 'Workday RaaS Custom Report API (REST JSON)' },
                   { value: 'SUCCESSFACTORS_ODATA', label: 'SAP SuccessFactors OData v4 API' },
                   { value: 'BAMBOOHR', label: 'BambooHR Employee Directory API' },
                 ]}
@@ -124,34 +142,91 @@ export const EmployeeRosterPage: React.FC = () => {
                 label="HRIS Report API Endpoint URL"
                 value={hrisForm.apiEndpoint}
                 onChange={(e) => setHrisForm({ ...hrisForm, apiEndpoint: e.target.value })}
-                placeholder="https://wd2-impl-services1.workday.com/ccx/service/..."
+                placeholder="https://wd2-impl-services1.workday.com/ccx/service/customreport2/..."
+                helperText="OAuth2 REST URL endpoint providing standard workforce json payload"
                 required
               />
 
               <Input
-                label="API Access Token / Bearer Key"
+                label="API Secret Access Token / Bearer Key"
                 type="password"
                 value={hrisForm.apiKey}
                 onChange={(e) => setHrisForm({ ...hrisForm, apiKey: e.target.value })}
-                placeholder="Enter secret token"
+                placeholder="Enter secret token or OAuth2 bearer key"
+                helperText="Encrypted via KMS key before storing in project configuration"
               />
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#334155', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={hrisForm.autoTerminateMissing}
-                  onChange={(e) => setHrisForm({ ...hrisForm, autoTerminateMissing: e.target.checked })}
-                  style={{ width: '16px', height: '16px', borderRadius: '4px' }}
-                />
-                <span>Auto-terminate employees missing from HRIS sync response</span>
-              </label>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '14px', borderRadius: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: '#78350f' }}>
+                  <input
+                    type="checkbox"
+                    checked={hrisForm.autoTerminateMissing}
+                    onChange={(e) => setHrisForm({ ...hrisForm, autoTerminateMissing: e.target.checked })}
+                    style={{ width: '18px', height: '18px', marginTop: '2px', borderRadius: '4px' }}
+                  />
+                  <div>
+                    <strong>Enable Delta Auto-Termination:</strong> Automatically mark active employees unlisted in HRIS response as <code style={{ background: '#fef3c7', padding: '1px 4px', borderRadius: '4px' }}>TERMINATED</code>.
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.775rem', color: '#92400e' }}>
+                      ⚠️ Ensure your HRIS API query returns all active workforce members before enabling auto-termination.
+                    </p>
+                  </div>
+                </label>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '4px' }}>
                 <Button type="submit" variant="primary" isLoading={hrisSyncMutation.isPending}>
-                  🔄 Trigger HRIS Roster Sync Now
+                  🔄 Trigger On-Demand HRIS Roster Sync
                 </Button>
               </div>
             </form>
+
+            {/* Sync Results Metric Summary Panel */}
+            {hrisSyncMutation.data && (
+              <div style={{ marginTop: '24px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Latest HRIS Sync Summary ({hrisSyncMutation.data.jobId})
+                  </h4>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '2px 0 0 0' }}>
+                    Results from manual trigger execution for project {hrisSyncMutation.data.projectId}.
+                  </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2563eb' }}>{hrisSyncMutation.data.totalProcessed}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Total Processed</div>
+                  </div>
+                  <div style={{ background: '#f0fdf4', padding: '14px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#166534' }}>{hrisSyncMutation.data.insertedCount}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#15803d' }}>Inserted</div>
+                  </div>
+                  <div style={{ background: '#eff6ff', padding: '14px', borderRadius: '8px', border: '1px solid #bfdbfe', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e40af' }}>{hrisSyncMutation.data.updatedCount}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1d4ed8' }}>Updated</div>
+                  </div>
+                  <div style={{ background: '#fffbeb', padding: '14px', borderRadius: '8px', border: '1px solid #fde68a', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#92400e' }}>{hrisSyncMutation.data.terminatedCount}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#b45309' }}>Auto-Terminated</div>
+                  </div>
+                  <div style={{ background: '#fef2f2', padding: '14px', borderRadius: '8px', border: '1px solid #fecaca', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#991b1b' }}>{hrisSyncMutation.data.failedCount}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#b91c1c' }}>Failed</div>
+                  </div>
+                </div>
+
+                {hrisSyncMutation.data.errors && hrisSyncMutation.data.errors.length > 0 && (
+                  <div style={{ marginTop: '12px', background: '#fef2f2', border: '1px solid #fecaca', padding: '12px', borderRadius: '8px' }}>
+                    <h5 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#991b1b', margin: '0 0 6px 0' }}>Sync Diagnostics & Warnings:</h5>
+                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.8rem', color: '#7f1d1d' }}>
+                      {hrisSyncMutation.data.errors.map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
         )}
       </div>
