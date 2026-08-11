@@ -104,6 +104,18 @@ public class OrgNodeController {
         return ResponseEntity.ok(ApiResponse.success(report, "Hierarchy anomaly inspection completed", correlationId));
     }
 
+    @DeleteMapping("/{nodeId}")
+    @Operation(summary = "Soft Delete Organization Node", description = "Soft deletes an organization node if it has no active child nodes or assigned employees.")
+    public ResponseEntity<ApiResponse<Void>> deleteNode(
+            @PathVariable("nodeId") String nodeId,
+            @RequestParam(value = "projectId", required = false) String projectIdParam) {
+        String projectId = resolveProjectId(projectIdParam);
+        nodeService.deleteNode(projectId, nodeId);
+        String correlationId = ProjectContextHolder.getCorrelationId();
+        return ResponseEntity.ok(ApiResponse.success(null, "Organization node soft deleted successfully", correlationId));
+    }
+
+
     private String resolveProjectId(String queryParam) {
         if (queryParam != null && !queryParam.isBlank()) {
             return queryParam;

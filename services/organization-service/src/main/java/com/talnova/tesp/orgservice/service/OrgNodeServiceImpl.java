@@ -229,6 +229,34 @@ public class OrgNodeServiceImpl implements OrgNodeService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public void deleteNode(String projectId, String nodeId) {
+        log.info("Soft deleting organization node {} for projectId {}", nodeId, projectId);
+        OrgNodeDocument node = repository.findActiveNodeByNodeId(projectId, nodeId)
+                .orElseThrow(() -> new NodeNotFoundException(nodeId));
+
+        List<OrgNodeDocument> subTree = repository.findActiveSubTreeByPathPrefix(projectId, node.getPath());
+        if (subTree.size() > 1) {
+            throw new com.talnova.tesp.orgservice.exception.OrgNodeValidationException(
+                    "Cannot delete node " + nodeId + " containing active child nodes (FR-ORG-006)");
+        }
+
+        node.setDeleted(true);
+        node.setStatus("ARCHIVED");
+        repository.save(node);
+
+        String eventId = "EVT-" + UUID.randomUUID().toString().substring(0, 8);
+        recordOutboxEvent(projectId, "OrgNode", nodeId, "ORG_NODE_DELETED", Map.of(
+                "eventId", eventId,
+                "eventType", "ORG_NODE_DELETED",
+                "projectId", projectId,
+                "nodeId", nodeId
+        ));
+        auditLoggerService.logAuditEvent(projectId, "DELETE_ORG_NODE", "Soft deleted organization node " + nodeId, "127.0.0.1");
+    }
+
+
     private void recordOutboxEvent(String projectId, String aggregateType, String aggregateId, String eventType, Map<String, Object> payloadMap) {
         try {
             String eventId = (String) payloadMap.get("eventId");
