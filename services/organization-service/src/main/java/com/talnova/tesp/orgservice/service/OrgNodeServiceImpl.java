@@ -1,6 +1,7 @@
 package com.talnova.tesp.orgservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.talnova.tesp.orgservice.domain.NodeStatus;
 import com.talnova.tesp.orgservice.domain.OrgNodeDocument;
 import com.talnova.tesp.orgservice.domain.OutboxEventDocument;
 import com.talnova.tesp.orgservice.domain.OutboxStatus;
@@ -9,6 +10,7 @@ import com.talnova.tesp.orgservice.dto.MoveNodeRequestDTO;
 import com.talnova.tesp.orgservice.dto.OrgNodeResponseDTO;
 import com.talnova.tesp.orgservice.exception.DuplicateNodeIdException;
 import com.talnova.tesp.orgservice.exception.NodeNotFoundException;
+import com.talnova.tesp.orgservice.exception.NodeValidationException;
 import com.talnova.tesp.orgservice.mapper.OrgNodeMapper;
 import com.talnova.tesp.orgservice.repository.OrgNodeRepository;
 import com.talnova.tesp.orgservice.repository.OutboxEventRepository;
@@ -238,12 +240,12 @@ public class OrgNodeServiceImpl implements OrgNodeService {
 
         List<OrgNodeDocument> subTree = repository.findActiveSubTreeByPathPrefix(projectId, node.getPath());
         if (subTree.size() > 1) {
-            throw new com.talnova.tesp.orgservice.exception.OrgNodeValidationException(
+            throw new NodeValidationException(
                     "Cannot delete node " + nodeId + " containing active child nodes (FR-ORG-006)");
         }
 
         node.setDeleted(true);
-        node.setStatus("ARCHIVED");
+        node.setStatus(NodeStatus.ARCHIVED);
         repository.save(node);
 
         String eventId = "EVT-" + UUID.randomUUID().toString().substring(0, 8);
@@ -253,9 +255,14 @@ public class OrgNodeServiceImpl implements OrgNodeService {
                 "projectId", projectId,
                 "nodeId", nodeId
         ));
-        auditLoggerService.logAuditEvent(projectId, "DELETE_ORG_NODE", "Soft deleted organization node " + nodeId, "127.0.0.1");
-    }
 
+        auditLoggerService.logOrgEvent(
+                projectId,
+                "DELETE_ORG_NODE",
+                nodeId,
+                Map.of("details", "Soft deleted organization node " + nodeId, "clientIp", "127.0.0.1")
+        );
+    }
 
     private void recordOutboxEvent(String projectId, String aggregateType, String aggregateId, String eventType, Map<String, Object> payloadMap) {
         try {

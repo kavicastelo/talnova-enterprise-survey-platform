@@ -1,258 +1,179 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState';
 import { ActionPlanCreateModal } from '../../../components/action/ActionPlanCreateModal';
+import { ActionCardDetailDrawer } from '../../../components/actions/ActionCardDetailDrawer';
 import { useTenant } from '../../../context/TenantContext';
+import { useAuth } from '../../../context/AuthContext';
 import { ActionStatus, ActionPlanResponse } from '../../../types/actionPlanning';
-import {
-  useKanbanActionBoardQuery,
-  useApproveActionPlanMutation,
-  useSyncJiraMutation,
-} from '../api/useActionPlanningQueries';
-
-const KANBAN_COLUMNS: { key: ActionStatus; label: string; bg: string; border: string }[] = [
-  { key: 'DRAFT', label: 'Draft / Proposed', bg: '#f8fafc', border: '#cbd5e1' },
-  { key: 'APPROVED', label: 'Approved by HR', bg: '#eff6ff', border: '#bfdbfe' },
-  { key: 'IN_PROGRESS', label: 'In Progress', bg: '#fefce8', border: '#fef08a' },
-  { key: 'COMPLETED', label: 'Completed', bg: '#f0fdf4', border: '#bbf7d0' },
-];
+import { useKanbanActionBoardQuery } from '../api/useActionPlanningQueries';
+import { ActionBoardFilterBar } from '../components/ActionBoardFilterBar';
+import { ActionBoardHeaderMetrics } from '../components/ActionBoardHeaderMetrics';
+import { ActionKanbanBoard } from '../components/ActionKanbanBoard';
+import { ActionStateTransitionModal } from '../components/ActionStateTransitionModal';
+import { Plus } from 'lucide-react';
 
 export const ActionKanbanBoardPage: React.FC = () => {
   const { activeProject } = useTenant();
+  const { user } = useAuth();
+
+
+  // Multi-dimensional filters
   const [nodeId, setNodeId] = useState<string>('');
+  const [groupId, setGroupId] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Modals & Drawer State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [selectedCard, setSelectedCard] = useState<ActionPlanResponse | null>(null);
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState<boolean>(false);
+
+  // Transition Modal State
+  const [transitionCard, setTransitionCard] = useState<ActionPlanResponse | null>(null);
+  const [targetTransitionStatus, setTargetTransitionStatus] = useState<ActionStatus | null>(null);
+  const [isTransitionModalOpen, setIsTransitionModalOpen] = useState<boolean>(false);
 
   const projectId = activeProject?.projectId || 'PRJ-99201';
 
+  // API Query - Real backend data
   const {
     data: cardsData,
     isLoading,
     isError,
+    error,
     refetch,
-  } = useKanbanActionBoardQuery(projectId, nodeId);
+    isFetching,
+  } = useKanbanActionBoardQuery(projectId, nodeId || undefined, groupId || undefined, statusFilter || undefined, assigneeId || undefined);
 
-  const approveMutation = useApproveActionPlanMutation();
-  const syncJiraMutation = useSyncJiraMutation();
-
-  const handleApprove = (actionPlanId: string) => {
-    approveMutation.mutate({
-      actionPlanId,
-      payload: {
-        actorId: 'USR-HR-DIRECTOR',
-        userRole: 'HR_MANAGER',
-        rationale: 'Approved via Kanban Action Board',
-      },
-    });
+  const handleCardClick = (card: ActionPlanResponse) => {
+    setSelectedCard(card);
+    setIsDetailDrawerOpen(true);
   };
 
-  const handleSyncJira = (actionPlanId: string) => {
-    syncJiraMutation.mutate({ actionPlanId, projectKey: 'ENG' });
+  const handleRequestTransition = (card: ActionPlanResponse, targetStatus: ActionStatus) => {
+    setTransitionCard(card);
+    setTargetTransitionStatus(targetStatus);
+    setIsTransitionModalOpen(true);
   };
 
-  // Demo fallback cards
-  const fallbackCards: ActionPlanResponse[] = [
-    {
-      actionPlanId: 'ACT-9901',
-      projectId,
-      campaignId: 'CMP-101',
-      nodeId: 'N-301',
-      groupId: 'QG-01',
-      title: 'Senior Leadership Transparency Workshops',
-      description: 'Monthly Q&A sessions with executive leaders to address workload & direction concerns.',
-      baselineScore: 48.0,
-      targetScore: 75.0,
-      status: 'DRAFT',
-      assigneeId: 'EMP-1002',
-      milestoneCount: 3,
-    },
-    {
-      actionPlanId: 'ACT-9902',
-      projectId,
-      campaignId: 'CMP-101',
-      nodeId: 'N-301',
-      groupId: 'QG-02',
-      title: 'Engineering Team Workload & Sprint Balancing',
-      description: 'Rebalancing sprint allocation to limit overtime and reduce burnout risk.',
-      baselineScore: 52.0,
-      targetScore: 80.0,
-      status: 'APPROVED',
-      assigneeId: 'EMP-1005',
-      milestoneCount: 4,
-      externalSyncSystem: 'JIRA',
-    },
-    {
-      actionPlanId: 'ACT-9903',
-      projectId,
-      campaignId: 'CMP-101',
-      nodeId: 'N-301',
-      groupId: 'QG-04',
-      title: 'Career Mobility & Mentorship Framework',
-      description: 'Formal mentorship program connecting junior engineers with principal staff.',
-      baselineScore: 61.0,
-      targetScore: 85.0,
-      status: 'IN_PROGRESS',
-      assigneeId: 'EMP-1009',
-      milestoneCount: 2,
-    },
-  ];
+  // Client-side search filtering (by title, description, or actionPlanId)
+  const filteredCards = useMemo(() => {
+    if (!cardsData) return [];
+    if (!searchQuery.trim()) return cardsData;
 
-  const cards = cardsData && cardsData.length > 0 ? cardsData : fallbackCards;
+    const q = searchQuery.toLowerCase();
+    return cardsData.filter(
+      (c) =>
+        c.actionPlanId.toLowerCase().includes(q) ||
+        c.title.toLowerCase().includes(q) ||
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        (c.assigneeId && c.assigneeId.toLowerCase().includes(q))
+    );
+  }, [cardsData, searchQuery]);
 
   return (
-    <div>
+    <div className="min-h-screen bg-slate-50/50 pb-12">
+      {/* Header */}
       <PageHeader
         title="Closed-Loop Action Planning & Remediation Board"
-        subtitle={`Turn survey feedback insights into accountable, trackable workplace improvements for ${projectId}`}
+        subtitle={`Turn employee survey feedback into accountable, trackable workplace improvements (FEAT-010) — Project: ${projectId}`}
         actions={
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <select
-              value={nodeId}
-              onChange={(e) => setNodeId(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="primary"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-1.5 shadow-sm font-bold"
             >
-              <option value="N-301">Engineering Dept (N-301)</option>
-              <option value="GLOBAL_ORG">Global Enterprise Scope</option>
-              <option value="IT_DIVISION">IT Division (N-102)</option>
-            </select>
-            <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-              ➕ Create Action Plan
+              <Plus className="h-4 w-4" />
+              Create Action Plan
             </Button>
           </div>
         }
       />
 
-      {isLoading ? (
-        <Card variant="bordered" padding="24px" style={{ marginTop: '20px' }}>
-          <Skeleton height="400px" borderRadius="12px" />
-        </Card>
-      ) : isError ? (
-        <Card variant="bordered" padding="24px" style={{ marginTop: '20px' }}>
-          <ErrorState
-            title="Kanban Board Unavailable"
-            message="Could not load remediation action plans from action-planning-service."
-            onRetry={refetch}
-          />
-        </Card>
-      ) : (
-        <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {KANBAN_COLUMNS.map((col) => {
-            const colCards = cards.filter(
-              (c) =>
-                (col.key === 'DRAFT' && (c.status === 'DRAFT' || c.status === 'PROPOSED')) ||
-                (col.key === 'APPROVED' && c.status === 'APPROVED') ||
-                (col.key === 'IN_PROGRESS' && c.status === 'IN_PROGRESS') ||
-                (col.key === 'COMPLETED' && (c.status === 'COMPLETED' || c.status === 'VERIFIED'))
-            );
+      <div className="mt-6">
+        {/* Header Metrics Summary */}
+        <ActionBoardHeaderMetrics cards={cardsData || []} />
 
-            return (
-              <div
-                key={col.key}
-                style={{
-                  background: col.bg,
-                  border: `1px solid ${col.border}`,
-                  borderRadius: '12px',
-                  padding: '16px',
-                  minHeight: '550px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '8px', borderBottom: `1px solid ${col.border}` }}>
-                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>
-                    {col.label}
-                  </h4>
-                  <span style={{ background: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', border: `1px solid ${col.border}` }}>
-                    {colCards.length}
-                  </span>
-                </div>
+        {/* Multi-Dimensional Filter Bar */}
+        <ActionBoardFilterBar
+          nodeId={nodeId}
+          setNodeId={setNodeId}
+          groupId={groupId}
+          setGroupId={setGroupId}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          assigneeId={assigneeId}
+          setAssigneeId={setAssigneeId}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onRefresh={refetch}
+          isRefreshing={isFetching}
+        />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                  {colCards.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px 10px', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                      No action plans
-                    </div>
-                  ) : (
-                    colCards.map((card) => (
-                      <div
-                        key={card.actionPlanId}
-                        style={{
-                          background: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '10px',
-                          padding: '14px',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <code style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb' }}>
-                            {card.actionPlanId}
-                          </code>
-                          {card.externalSyncSystem && (
-                            <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }}>
-                              {card.externalSyncSystem}
-                            </span>
-                          )}
-                        </div>
-
-                        <h5 style={{ margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
-                          {card.title}
-                        </h5>
-                        <p style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
-                          {card.description}
-                        </p>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9', fontSize: '0.75rem', color: '#475569' }}>
-                          <span>
-                            Target: <strong style={{ color: '#dc2626' }}>{card.baselineScore}%</strong> &rarr; <strong style={{ color: '#16a34a' }}>{card.targetScore}%</strong>
-                          </span>
-                          <span>{card.milestoneCount || 0} Milestones</span>
-                        </div>
-
-                        {card.status === 'DRAFT' && (
-                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              style={{ width: '100%' }}
-                              isLoading={approveMutation.isPending}
-                              onClick={() => handleApprove(card.actionPlanId)}
-                            >
-                              ✓ Approve HR
-                            </Button>
-                          </div>
-                        )}
-
-                        {card.status === 'APPROVED' && !card.externalSyncSystem && (
-                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ width: '100%' }}
-                              isLoading={syncJiraMutation.isPending}
-                              onClick={() => handleSyncJira(card.actionPlanId)}
-                            >
-                              🔗 Sync to Jira
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
+        {/* Content States */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-slate-100/80 rounded-xl p-3 border border-slate-200 min-h-[500px]">
+                <Skeleton height="24px" className="mb-4 rounded-md" />
+                <Skeleton height="140px" className="mb-3 rounded-xl" />
+                <Skeleton height="140px" className="rounded-xl" />
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : isError ? (
+          <Card variant="bordered" padding="24px" className="bg-white border-red-200">
+            <ErrorState
+              title="Action Board Data Unavailable"
+              message={
+                error && (error as any).message
+                  ? (error as any).message
+                  : 'Could not connect to action-planning-service backend endpoint (/api/v1/actions/kanban).'
+              }
+              onRetry={refetch}
+            />
+          </Card>
+        ) : (
+          <ActionKanbanBoard
+            cards={filteredCards}
+            onSelectCard={handleCardClick}
+            onRequestTransition={handleRequestTransition}
+          />
+        )}
+      </div>
 
+      {/* Action Plan Create Modal */}
       <ActionPlanCreateModal
         isOpen={isCreateModalOpen}
         projectId={projectId}
         onClose={() => setIsCreateModalOpen(false)}
       />
+
+      {/* Action Plan Detail Drawer */}
+      <ActionCardDetailDrawer
+        isOpen={isDetailDrawerOpen}
+        card={selectedCard}
+        onClose={() => setIsDetailDrawerOpen(false)}
+        onRefresh={refetch}
+      />
+
+      {/* Action State Transition Modal */}
+      <ActionStateTransitionModal
+        isOpen={isTransitionModalOpen}
+        onClose={() => setIsTransitionModalOpen(false)}
+        actionPlan={transitionCard}
+        targetStatus={targetTransitionStatus}
+        currentUserRole={user?.roles?.[0] || 'HR_MANAGER'}
+        currentUserId={user?.id || 'USR-HR-DIRECTOR'}
+      />
     </div>
   );
 };
+
+

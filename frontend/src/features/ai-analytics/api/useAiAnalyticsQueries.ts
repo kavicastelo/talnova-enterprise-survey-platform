@@ -12,10 +12,10 @@ export function useCampaignAiInsightsQuery(projectId: string | undefined, campai
   });
 }
 
-export function useExecutiveSummaryQuery(campaignId?: string, nodeId?: string) {
+export function useExecutiveSummaryQuery(campaignId?: string, nodeId?: string, providerName?: string) {
   return useQuery({
-    queryKey: ['ai-summary', campaignId, nodeId],
-    queryFn: () => aiAnalyticsApi.getExecutiveSummary(campaignId, nodeId),
+    queryKey: ['ai-summary', campaignId, nodeId, providerName],
+    queryFn: () => aiAnalyticsApi.getExecutiveSummary(campaignId, nodeId, providerName),
     staleTime: 5 * 60 * 1000,
   });
 }

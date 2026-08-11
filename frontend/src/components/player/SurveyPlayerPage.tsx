@@ -3,6 +3,7 @@ import { RespondentType, ResponseSubmission } from '../../types/response';
 import { SurveyResponse as SurveyAST } from '../../types/survey';
 import { submitResponse } from '../../services/responseIngestionApi';
 import { evaluateBranchingTargetPage } from '../../utils/logicEvaluator';
+import { scrubPiiFromText } from '../../utils/piiScrubber';
 
 interface Props {
   projectId: string;
@@ -85,11 +86,28 @@ export const SurveyPlayerPage: React.FC<Props> = ({
     });
   };
 
-  const handleNextPage = () => {
-    // Check if branching rule triggers jump to specific page ID
-    const currentQuestions = currentPage.sections?.flatMap((s) => s.questions || []) || [];
-    let targetPageId: string | null = null;
+  const isQuestionAnswered = (q: any): boolean => {
+    const ans = answers[q.questionId];
+    if (!ans) return false;
+    if (ans.numericValue !== undefined && ans.numericValue !== null) return true;
+    if (ans.textValue !== undefined && ans.textValue !== null && ans.textValue.trim().length > 0) return true;
+    if (ans.selectedOptions !== undefined && ans.selectedOptions !== null && ans.selectedOptions.length > 0) return true;
+    return false;
+  };
 
+  const handleNextPage = () => {
+    setErrorMsg(null);
+    const currentQuestions = currentPage.sections?.flatMap((s) => s.questions || []) || [];
+
+    // Mandatory Question Check (VR-INT-004)
+    const missingMandatory = currentQuestions.find((q) => q.isMandatory && !isQuestionAnswered(q));
+    if (missingMandatory) {
+      setErrorMsg('⚠️ Please answer all mandatory questions (*) before advancing (VR-INT-004).');
+      return;
+    }
+
+    // Check if branching rule triggers jump to specific page ID
+    let targetPageId: string | null = null;
     for (const q of currentQuestions) {
       if (q.logicRules) {
         targetPageId = evaluateBranchingTargetPage(answers, q.logicRules);
@@ -109,14 +127,21 @@ export const SurveyPlayerPage: React.FC<Props> = ({
   };
 
   const handleSubmitSurvey = async () => {
-    setIsSubmitting(true);
     setErrorMsg(null);
+    const allQuestions = pages.flatMap((p) => p.sections?.flatMap((s) => s.questions || []) || []);
+    const missingMandatory = allQuestions.find((q) => q.isMandatory && !isQuestionAnswered(q));
+    if (missingMandatory) {
+      setErrorMsg('⚠️ Please answer all mandatory questions (*) before submitting (VR-INT-004).');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     const answerItems = Object.entries(answers).map(([questionId, ans]) => ({
       questionId,
       questionType: 'AST_QUESTION',
       numericValue: ans.numericValue,
-      textValue: ans.textValue,
+      textValue: scrubPiiFromText(ans.textValue),
       selectedOptions: ans.selectedOptions,
     }));
 

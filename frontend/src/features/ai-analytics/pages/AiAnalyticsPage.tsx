@@ -4,9 +4,16 @@ import { Tabs } from '../../../components/ui/Tabs';
 import { Card } from '../../../components/ui/Card';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Alert } from '../../../components/ui/Alert';
 import { SentimentAnalyticsPanel } from '../../../components/ai/SentimentAnalyticsPanel';
 import { ExecutiveSummaryCard } from '../../../components/ai/ExecutiveSummaryCard';
+import {
+  WorkplaceRiskAlertBanner,
+  RiskAlertItem,
+} from '../../../components/ai/WorkplaceRiskAlertBanner';
 import { useTenant } from '../../../context/TenantContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
   useCampaignAiInsightsQuery,
   useExecutiveSummaryQuery,
@@ -16,24 +23,42 @@ import {
 
 export const AiAnalyticsPage: React.FC = () => {
   const { activeProject } = useTenant();
+  const { user, hasRole } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('sentiment');
 
-  const campaignId = 'CMP-77102';
-  const projectId = activeProject?.projectId || 'PRJ-99201';
+  // Scope controls
+  const [campaignId, setCampaignId] = useState<string>('CMP-77102');
+  const [nodeScope, setNodeScope] = useState<string>('GLOBAL');
+  const [providerName, setProviderName] = useState<string>('OPENAI');
+
+  const projectId = activeProject?.projectId || localStorage.getItem('tesp_project_id') || 'PRJ-99201';
+
+  // Permission check per PR-AI-001 to PR-AI-004
+  const isAuthorized =
+    !user ||
+    hasRole(['EXECUTIVE', 'HR_MANAGER', 'CONSULTANT_DAASH', 'SUPER_ADMIN', 'PROJECT_ADMIN']);
 
   const {
     data: insightsData,
     isLoading: isInsightsLoading,
     isError: isInsightsError,
+    error: insightsError,
     refetch: refetchInsights,
-  } = useCampaignAiInsightsQuery(projectId, campaignId);
+  } = useCampaignAiInsightsQuery(
+    isAuthorized ? projectId : undefined,
+    isAuthorized ? campaignId : undefined
+  );
 
   const {
     data: summaryData,
     isLoading: isSummaryLoading,
     isError: isSummaryError,
     refetch: refetchSummary,
-  } = useExecutiveSummaryQuery(campaignId, 'GLOBAL');
+  } = useExecutiveSummaryQuery(
+    isAuthorized ? campaignId : undefined,
+    nodeScope,
+    providerName
+  );
 
   const overrideMutation = useOverrideSentimentMutation();
   const generateSummaryMutation = useGenerateSummaryMutation();
@@ -42,9 +67,9 @@ export const AiAnalyticsPage: React.FC = () => {
     overrideMutation.mutate({
       insightId,
       payload: {
-        overriddenBy: 'ADMIN_USER_88',
+        overriddenBy: user?.email || 'ANALYST_USER',
         newLabel,
-        reason: 'Human analyst calibration',
+        reason: 'Human analyst calibration per BR-AI-003',
       },
       projectId,
       campaignId,
@@ -53,58 +78,43 @@ export const AiAnalyticsPage: React.FC = () => {
 
   const handleRegenerateSummary = () => {
     generateSummaryMutation.mutate({
-      nodeScope: 'GLOBAL',
-      providerName: 'OPENAI',
+      nodeScope,
+      providerName,
     });
   };
 
-  // Demo fallback insights
-  const fallbackInsights: any[] = [
-    {
-      id: 'INSIGHT-001',
-      sanitizedText: 'Workload is manageable but deadlines are tight.',
-      sentimentScore: 0.25,
-      sentimentLabel: 'NEUTRAL' as const,
-      confidence: 0.92,
-      themes: ['Workload Audit', 'Deadlines'],
-      riskSeverity: 'LOW' as const,
-    },
-    {
-      id: 'INSIGHT-002',
-      sanitizedText: 'Working with [MASKED_NAME] was a great and excellent experience!',
-      sentimentScore: 0.85,
-      sentimentLabel: 'POSITIVE' as const,
-      confidence: 0.95,
-      themes: ['Team Collaboration', 'Development Workshops'],
-      riskSeverity: 'LOW' as const,
-    },
-    {
-      id: 'INSIGHT-003',
-      sanitizedText: 'Communication from management is terrible and very poor overall.',
-      sentimentScore: -0.75,
-      sentimentLabel: 'NEGATIVE' as const,
-      confidence: 0.91,
-      themes: ['Management Communication'],
-      riskSeverity: 'MEDIUM' as const,
-    },
-  ];
+  // Derive workplace risk alerts for PF-AI-002 from insightsData
+  const extractedRiskAlerts: RiskAlertItem[] = React.useMemo(() => {
+    if (!insightsData) return [];
+    const items: RiskAlertItem[] = [];
+    insightsData.forEach((doc: any, index: number) => {
+      if (doc.riskFlags && doc.riskFlags.length > 0) {
+        doc.riskFlags.forEach((flag: any, subIndex: number) => {
+          items.push({
+            id: `ALERT-${doc.id || index}-${subIndex}`,
+            category: flag.category || doc.riskCategory || 'SAFETY',
+            severity: flag.severity || doc.riskSeverity || 'HIGH',
+            keyword: flag.keyword || 'risk keyword',
+            sanitizedSnippet: doc.sanitizedText || 'Unspecified risk comment',
+            detectedAt: doc.processedAt || new Date().toISOString(),
+          });
+        });
+      } else if (doc.riskSeverity && doc.riskSeverity !== 'NONE') {
+        items.push({
+          id: `ALERT-${doc.id || index}`,
+          category: doc.riskCategory || 'COMPLIANCE',
+          severity: doc.riskSeverity,
+          keyword: doc.riskCategory || 'workplace risk',
+          sanitizedSnippet: doc.sanitizedText || 'Risk comment',
+          detectedAt: doc.createdAt || new Date().toISOString(),
+        });
+      }
+    });
+    return items;
+  }, [insightsData]);
 
-  const fallbackSummary = {
-    nodeScope: 'GLOBAL',
-    summaryTitle: 'Q3 Enterprise Workforce Culture Audit',
-    topStrengths: [
-      'Strong managerial leadership trust across corporate nodes.',
-      'High collaboration index in engineering teams.',
-    ],
-    topConcerns: [
-      'Workload bottlenecks in maritime logistics unit.',
-      'Perceived delays in compensation transparency.',
-    ],
-    recommendations: [
-      'Schedule quarterly workload balancing workshops.',
-      'Enhance internal communications regarding career mobility paths.',
-    ],
-    generatedAt: new Date().toISOString(),
+  const handleInvestigateRisk = (alert: RiskAlertItem) => {
+    window.location.href = `/action-planning?campaignId=${campaignId}&riskId=${alert.id}&category=${alert.category}`;
   };
 
   const tabs = [
@@ -112,35 +122,134 @@ export const AiAnalyticsPage: React.FC = () => {
     { id: 'summary', label: 'LLM Executive Summaries' },
   ];
 
+  if (!isAuthorized) {
+    return (
+      <div className="space-y-6 p-6">
+        <PageHeader
+          title="AI Analytics &amp; Sentiment Intelligence Studio"
+          subtitle="Access restricted per PR-AI-004"
+        />
+        <Card variant="bordered" padding="24px">
+          <Alert type="error" title="Access Forbidden (403)">
+            Your user role does not have authorization to access AI Sentiment Analytics endpoints or LLM Executive Summaries.
+          </Alert>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="AI Analytics & Sentiment Intelligence Studio"
-        subtitle={`NLP sentiment extraction, topic clustering, and LLM executive summaries for ${projectId}`}
+        title="AI Analytics &amp; Sentiment Intelligence Studio"
+        subtitle={`NLP sentiment extraction, PII pre-sanitization, topic clustering, and LLM executive summaries for ${projectId}`}
       />
+
+      {/* Scope Controls */}
+      <Card variant="bordered" padding="16px">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                Campaign ID
+              </label>
+              <input
+                type="text"
+                value={campaignId}
+                onChange={(e) => setCampaignId(e.target.value)}
+                placeholder="e.g. CMP-77102"
+                className="bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-indigo-600 w-36"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                Node Scope (FR-AI-006)
+              </label>
+              <input
+                type="text"
+                value={nodeScope}
+                onChange={(e) => setNodeScope(e.target.value)}
+                placeholder="e.g. GLOBAL or N-301"
+                className="bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-indigo-600 w-36"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                AI Provider (FR-AI-005)
+              </label>
+              <select
+                value={providerName}
+                onChange={(e) => setProviderName(e.target.value)}
+                className="bg-white border border-slate-300 rounded px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-600"
+              >
+                <option value="OPENAI">OpenAI GPT-4o</option>
+                <option value="GEMINI">Google Gemini 1.5 Pro</option>
+                <option value="VLLM">Local vLLM Llama 3</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-500">
+            PII Pre-Sanitization Status: <span className="font-bold text-emerald-600">🛡️ Active (Regex + NER)</span>
+          </div>
+        </div>
+      </Card>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      <div style={{ marginTop: '20px' }}>
+      <div className="mt-4">
         {activeTab === 'sentiment' && (
           <div>
             {isInsightsLoading ? (
               <Card variant="bordered" padding="24px">
-                <Skeleton height="320px" borderRadius="12px" />
+                <div className="space-y-4">
+                  <Skeleton height="32px" width="30%" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Skeleton height="100px" borderRadius="12px" />
+                    <Skeleton height="100px" borderRadius="12px" />
+                    <Skeleton height="100px" borderRadius="12px" />
+                  </div>
+                  <Skeleton height="180px" borderRadius="12px" />
+                </div>
               </Card>
             ) : isInsightsError ? (
               <Card variant="bordered" padding="24px">
                 <ErrorState
-                  title="AI Insights Unavailable"
-                  message="Could not load NLP sentiment insights from ai-analytics-service."
+                  title="AI Insights API Error"
+                  message={
+                    (insightsError as any)?.message ||
+                    'Could not load NLP sentiment insights from ai-analytics-service.'
+                  }
                   onRetry={refetchInsights}
                 />
               </Card>
+            ) : insightsData && insightsData.length === 0 ? (
+              <Card variant="bordered" padding="24px">
+                <EmptyState
+                  title="No Ingested Qualitative Feedback"
+                  description={`Campaign ${campaignId} has 0 ingested text comments. Sentiment scoring worker will process new open-ended responses asynchronously.`}
+                />
+              </Card>
+            ) : insightsData ? (
+              <div className="space-y-6">
+                <WorkplaceRiskAlertBanner
+                  alerts={extractedRiskAlerts}
+                  onInvestigate={handleInvestigateRisk}
+                />
+                <SentimentAnalyticsPanel
+                  insights={insightsData as any}
+                  onOverrideTag={handleOverrideTag}
+                />
+              </div>
             ) : (
-              <SentimentAnalyticsPanel
-                insights={(insightsData as any) || fallbackInsights}
-                onOverrideTag={handleOverrideTag}
-              />
+              <Card variant="bordered" padding="24px">
+                <EmptyState
+                  title="No AI Sentiment Data"
+                  description="Please specify a valid Campaign ID to view sentiment intelligence metrics."
+                />
+              </Card>
             )}
           </div>
         )}
@@ -154,17 +263,24 @@ export const AiAnalyticsPage: React.FC = () => {
             ) : isSummaryError ? (
               <Card variant="bordered" padding="24px">
                 <ErrorState
-                  title="Executive Summary Unavailable"
+                  title="Executive Summary API Error"
                   message="Could not load LLM executive summary report from ai-analytics-service."
                   onRetry={refetchSummary}
                 />
               </Card>
-            ) : (
+            ) : summaryData ? (
               <ExecutiveSummaryCard
-                summary={summaryData || fallbackSummary}
+                summary={summaryData}
                 onRegenerate={handleRegenerateSummary}
                 isLoading={generateSummaryMutation.isPending}
               />
+            ) : (
+              <Card variant="bordered" padding="24px">
+                <EmptyState
+                  title="No LLM Executive Summary"
+                  description="No executive summary generated for active scope. Click Regenerate to compile."
+                />
+              </Card>
             )}
           </div>
         )}

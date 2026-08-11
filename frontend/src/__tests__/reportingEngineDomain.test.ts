@@ -89,4 +89,41 @@ describe('FEAT-009 Reporting Engine Domain Integration', () => {
     expect(shortPass.length >= 6 && shortPass.length <= 30).toBe(false);
     expect(longPass.length >= 6 && longPass.length <= 30).toBe(false);
   });
+
+  it('submits streaming XLSX raw response dataset export job per FR-RPT-003 (PF-RPT-002)', async () => {
+    const mockXlsxJob = {
+      jobId: 'JOB-XLSX-8810',
+      projectId: 'PRJ-99201',
+      campaignId: 'CMP-101',
+      reportType: 'RAW_RESPONSES_XLSX' as const,
+      status: 'QUEUED' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue(mockXlsxJob);
+
+    const payload: ReportRequest = {
+      projectId: 'PRJ-99201',
+      campaignId: 'CMP-101',
+      reportType: 'RAW_RESPONSES_XLSX',
+      requestedBy: 'USR-HR-DIRECTOR',
+    };
+
+    const result = await reportingApi.generateReport(payload);
+
+    expect(spy).toHaveBeenCalledWith('/reports/generate', payload);
+    expect(result.reportType).toBe('RAW_RESPONSES_XLSX');
+    expect(result.status).toBe('QUEUED');
+  });
+
+  it('enforces differential privacy suppression when cell response count N < 5 per BR-RPT-001 (PF-RPT-005)', () => {
+    const sanitizeScore = (score: number | null, sampleSize: number) => {
+      if (sampleSize < 5) return '* N/A (N < 5)';
+      return score !== null ? `${score}%` : 'N/A';
+    };
+
+    expect(sanitizeScore(85, 12)).toBe('85%');
+    expect(sanitizeScore(85, 3)).toBe('* N/A (N < 5)');
+    expect(sanitizeScore(null, 2)).toBe('* N/A (N < 5)');
+  });
 });

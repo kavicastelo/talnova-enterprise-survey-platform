@@ -100,6 +100,49 @@ describe('FEAT-010 Action Planning Domain Integration', () => {
     expect(result.status).toBe('APPROVED');
   });
 
+  it('rejectActionPlan calls POST /actions/{id}/reject', async () => {
+    const mockRejected = {
+      actionPlanId: 'ACT-9901',
+      status: 'REJECTED' as const,
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue(mockRejected);
+
+    const payload: ApprovalRequest = {
+      actorId: 'USR-HR-DIR',
+      userRole: 'HR_MANAGER',
+      rationale: 'Budget revisions required',
+    };
+
+    const result = await actionPlanningApi.rejectActionPlan('ACT-9901', payload);
+
+    expect(spy).toHaveBeenCalledWith('/actions/ACT-9901/reject', payload);
+    expect(result.status).toBe('REJECTED');
+  });
+
+  it('transitionState delegates to approveActionPlan when targetStatus is APPROVED', async () => {
+    const mockApproved = {
+      actionPlanId: 'ACT-9901',
+      status: 'APPROVED' as const,
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue(mockApproved);
+
+    const result = await actionPlanningApi.transitionState('ACT-9901', {
+      targetStatus: 'APPROVED',
+      actorId: 'USR-HR-DIR',
+      userRole: 'HR_MANAGER',
+      comments: 'Approved via state transition dialog',
+    });
+
+    expect(spy).toHaveBeenCalledWith('/actions/ACT-9901/approve', {
+      actorId: 'USR-HR-DIR',
+      userRole: 'HR_MANAGER',
+      rationale: 'Approved via state transition dialog',
+    });
+    expect(result.status).toBe('APPROVED');
+  });
+
   it('syncToJira calls POST /actions/{id}/sync-jira', async () => {
     const mockSyncInfo = {
       system: 'JIRA',
@@ -115,4 +158,38 @@ describe('FEAT-010 Action Planning Domain Integration', () => {
     expect(result.system).toBe('JIRA');
     expect(result.externalId).toBe('ENG-1082');
   });
+
+  it('syncToPlanner calls POST /actions/{id}/sync-ms-planner', async () => {
+    const mockPlannerSyncInfo = {
+      system: 'MS_PLANNER',
+      externalId: 'PLN-8801',
+      externalKey: 'PLN-8801',
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue(mockPlannerSyncInfo);
+
+    const result = await actionPlanningApi.syncToPlanner('ACT-9901', 'PLN-MAIN');
+
+    expect(spy).toHaveBeenCalledWith('/actions/ACT-9901/sync-ms-planner', {}, { params: { planId: 'PLN-MAIN' } });
+    expect(result.system).toBe('MS_PLANNER');
+    expect(result.externalId).toBe('PLN-8801');
+  });
+
+  it('verifyActionPlan calls POST /actions/{id}/verify', async () => {
+    const mockVerified = {
+      actionPlanId: 'ACT-9901',
+      status: 'VERIFIED' as const,
+      baselineScore: 50.0,
+      postActionScore: 68.0,
+    };
+
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValue(mockVerified);
+
+    const result = await actionPlanningApi.verifyActionPlan('ACT-9901', 68.0);
+
+    expect(spy).toHaveBeenCalledWith('/actions/ACT-9901/verify', { postActionScore: 68.0 });
+    expect(result.status).toBe('VERIFIED');
+    expect(result.postActionScore).toBe(68.0);
+  });
 });
+

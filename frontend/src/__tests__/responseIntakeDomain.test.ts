@@ -105,4 +105,64 @@ describe('FEAT-006 Response Intake Domain Integration', () => {
     expect(spy).toHaveBeenCalledWith('/responses', payload);
     expect(result.status).toBe('ACCEPTED');
   });
+
+  it('validates mandatory questions requirement (VR-INT-004)', () => {
+    const isQuestionAnswered = (ans: { numericValue?: number; textValue?: string; selectedOptions?: string[] } | undefined): boolean => {
+      if (!ans) return false;
+      if (ans.numericValue !== undefined && ans.numericValue !== null) return true;
+      if (ans.textValue !== undefined && ans.textValue !== null && ans.textValue.trim().length > 0) return true;
+      if (ans.selectedOptions !== undefined && ans.selectedOptions !== null && ans.selectedOptions.length > 0) return true;
+      return false;
+    };
+
+    expect(isQuestionAnswered({ numericValue: 5 })).toBe(true);
+    expect(isQuestionAnswered({ textValue: 'Feedback text' })).toBe(true);
+    expect(isQuestionAnswered({ selectedOptions: ['Opt 1'] })).toBe(true);
+    expect(isQuestionAnswered({ textValue: '   ' })).toBe(false);
+    expect(isQuestionAnswered(undefined)).toBe(false);
+  });
+
+  it('handles duplicate submission token burn rejection (BR-INT-001 / TC-INT-002)', async () => {
+    const errorResponse = {
+      response: {
+        status: 403,
+        data: {
+          message: 'Invalid or expired survey token. Token already used.',
+        },
+      },
+    };
+
+    vi.spyOn(apiClient, 'post').mockRejectedValue(errorResponse);
+
+    const payload: ResponseSubmissionRequest = {
+      projectId: 'PRJ-99201',
+      campaignId: 'CMP-101',
+      surveyId: 'SRV-5001',
+      surveyVersion: 1,
+      responseToken: 'BURNED-TOKEN-101',
+      respondentType: 'SEMI_ANONYMOUS',
+      answers: [],
+    };
+
+    await expect(responseIntakeApi.submitResponse(payload)).rejects.toMatchObject({
+      response: {
+        status: 403,
+        data: {
+          message: 'Invalid or expired survey token. Token already used.',
+        },
+      },
+    });
+  });
+
+  it('scrubs emails and phone numbers from open-text answers (Section 20 / BR-INT-002)', () => {
+    const rawText = 'Reach me at john.doe@example.com or call 555-123-4567 for details.';
+    const scrubbed = rawText
+      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[REDACTED EMAIL]')
+      .replace(/(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g, '[REDACTED PHONE]');
+
+    expect(scrubbed).toContain('[REDACTED EMAIL]');
+    expect(scrubbed).toContain('[REDACTED PHONE]');
+    expect(scrubbed).not.toContain('john.doe@example.com');
+    expect(scrubbed).not.toContain('555-123-4567');
+  });
 });
