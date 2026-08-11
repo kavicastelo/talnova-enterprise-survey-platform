@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
+import { Button } from '../ui/Button';
 
 interface LocaleManagementPanelProps {
   supportedLocales: string[];
   defaultLocale: string;
-  onChange: (supportedLocales: string[], defaultLocale: string) => void;
+  onSave: (supportedLocales: string[], defaultLocale: string) => void;
+  isSaving?: boolean;
 }
 
 export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
   supportedLocales: initialSupportedLocales,
   defaultLocale: initialDefaultLocale,
-  onChange
+  onSave,
+  isSaving,
 }) => {
   const [supportedLocales, setSupportedLocales] = useState<string[]>(initialSupportedLocales);
   const [defaultLocale, setDefaultLocale] = useState<string>(initialDefaultLocale);
@@ -23,26 +26,25 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
     { tag: 'fr-FR', name: 'French (France)' },
     { tag: 'de-DE', name: 'German (Germany)' },
     { tag: 'ja-JP', name: 'Japanese (Japan)' },
-    { tag: 'es-ES', name: 'Spanish (Spain)' }
+    { tag: 'es-ES', name: 'Spanish (Spain)' },
   ];
 
   const handleAddLocale = (tagToAdd?: string) => {
     const tag = (tagToAdd || newLocaleTag).trim();
     if (!tag) return;
     if (supportedLocales.includes(tag)) {
-      setValidationError(`Locale '${tag}' is already added.`);
+      setValidationError(`Locale '${tag}' is already present in supported locales.`);
       return;
     }
     const updated = [...supportedLocales, tag];
     setSupportedLocales(updated);
     setNewLocaleTag('');
     setValidationError(null);
-    onChange(updated, defaultLocale);
   };
 
   const handleRemoveLocale = (tagToRemove: string) => {
     if (supportedLocales.length <= 1) {
-      setValidationError('At least one supported locale is required.');
+      setValidationError('At least one supported locale is required (VR-CFG-004).');
       return;
     }
     const updated = supportedLocales.filter((loc) => loc !== tagToRemove);
@@ -55,22 +57,45 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
 
     setSupportedLocales(updated);
     setValidationError(null);
-    onChange(updated, updatedDefault);
   };
 
   const handleSetDefault = (tag: string) => {
     if (!supportedLocales.includes(tag)) {
-      setValidationError(`Default locale '${tag}' must be present in supported locales.`);
+      setValidationError(`Default locale '${tag}' must be present in supported locales (BR-CFG-002).`);
       return;
     }
     setDefaultLocale(tag);
     setValidationError(null);
-    onChange(supportedLocales, tag);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+
+    // VR-CFG-004: Supported Locales Guard
+    if (!supportedLocales || supportedLocales.length === 0) {
+      setValidationError('At least one supported locale is required (VR-CFG-004).');
+      return;
+    }
+
+    // BR-CFG-002: Default Locale Guard
+    if (!supportedLocales.includes(defaultLocale)) {
+      setValidationError('Default locale MUST be present in supported locales array (BR-CFG-002).');
+      return;
+    }
+
+    onSave(supportedLocales, defaultLocale);
   };
 
   return (
-    <div style={{ background: '#ffffff', padding: '28px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-      <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Locale & Multilingual Management</h3>
+    <form onSubmit={handleSave} style={{ background: '#ffffff', padding: '28px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Locale & Multilingual Management</h3>
+        <Button type="submit" variant="primary" isLoading={isSaving}>
+          Save Locale Settings
+        </Button>
+      </div>
+
       <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '24px' }}>
         Configure IETF BCP 47 language tags for survey translation and tenant localization.
       </p>
@@ -84,7 +109,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
       {/* Active Supported Locales Chips */}
       <div style={{ marginBottom: '24px' }}>
         <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>
-          Active Supported Locales ({supportedLocales.length})
+          Active Supported Locales ({supportedLocales.length}) — VR-CFG-004
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           {supportedLocales.map((locale) => {
@@ -102,7 +127,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
                   border: `1.5px solid ${isDefault ? '#3b82f6' : '#cbd5e1'}`,
                   fontWeight: 600,
                   fontSize: '0.9rem',
-                  color: isDefault ? '#1d4ed8' : '#334155'
+                  color: isDefault ? '#1d4ed8' : '#334155',
                 }}
               >
                 <span>{locale}</span>
@@ -112,6 +137,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleRemoveLocale(locale)}
                   title="Remove locale"
                   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700, fontSize: '1rem', padding: '0 2px' }}
@@ -138,6 +164,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
             style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontFamily: 'monospace' }}
           />
           <button
+            type="button"
             onClick={() => handleAddLocale()}
             style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
           >
@@ -153,6 +180,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
             .map((item) => (
               <button
                 key={item.tag}
+                type="button"
                 onClick={() => handleAddLocale(item.tag)}
                 style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', color: '#334155', cursor: 'pointer' }}
               >
@@ -162,10 +190,10 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
         </div>
       </div>
 
-      {/* Default Locale Radio Selector */}
+      {/* Default Locale Selector */}
       <div>
         <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>
-          Select Default System Fallback Locale
+          Select Mandatory Default System Fallback Locale (BR-CFG-002)
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {supportedLocales.map((locale) => (
@@ -179,7 +207,7 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
                 borderRadius: '8px',
                 border: `1px solid ${locale === defaultLocale ? '#bfdbfe' : '#e2e8f0'}`,
                 background: locale === defaultLocale ? '#eff6ff' : '#ffffff',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               <input
@@ -199,6 +227,6 @@ export const LocaleManagementPanel: React.FC<LocaleManagementPanelProps> = ({
           ))}
         </div>
       </div>
-    </div>
+    </form>
   );
 };
