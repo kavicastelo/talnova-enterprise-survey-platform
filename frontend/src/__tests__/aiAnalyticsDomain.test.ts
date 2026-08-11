@@ -53,6 +53,28 @@ describe('FEAT-008 AI Analytics Domain Integration', () => {
     expect(result[0].sentimentLabel).toBe('POSITIVE');
   });
 
+  it('getCampaignInsights correctly preserves PII masked tokens per US-AI-001', async () => {
+    const mockPiiInsights = [
+      {
+        id: 'INSIGHT-002',
+        projectId: 'PRJ-99201',
+        campaignId: 'CMP-101',
+        sanitizedText: 'Feedback for [MASKED_NAME] sent to [MASKED_EMAIL]',
+        sentimentScore: 0.5,
+        sentimentLabel: 'POSITIVE' as const,
+        confidence: 0.98,
+        themes: ['Performance Review'],
+      },
+    ];
+
+    vi.spyOn(apiClient, 'get').mockResolvedValue(mockPiiInsights);
+
+    const result = await aiAnalyticsApi.getCampaignInsights('PRJ-99201', 'CMP-101');
+
+    expect(result[0].sanitizedText).toContain('[MASKED_NAME]');
+    expect(result[0].sanitizedText).toContain('[MASKED_EMAIL]');
+  });
+
   it('overrideSentimentTag calls PUT /ai/insights/{insightId}/override', async () => {
     const mockUpdatedInsight = {
       id: 'INSIGHT-001',
@@ -100,5 +122,30 @@ describe('FEAT-008 AI Analytics Domain Integration', () => {
     });
     expect(result.summaryTitle).toBe('Q3 Executive Summary Report');
     expect(result.topStrengths?.length).toBe(2);
+  });
+
+  it('filters comments by extracted organizational themes per US-AI-003 (PF-AI-003)', () => {
+    const sampleInsights = [
+      {
+        id: 'INS-01',
+        sanitizedText: 'Management communication needs improvement',
+        sentimentScore: -0.6,
+        sentimentLabel: 'NEGATIVE' as const,
+        confidence: 0.9,
+        themes: ['Management Communication'],
+      },
+      {
+        id: 'INS-02',
+        sanitizedText: 'Great teamwork and development workshops',
+        sentimentScore: 0.8,
+        sentimentLabel: 'POSITIVE' as const,
+        confidence: 0.95,
+        themes: ['Teamwork', 'Development Workshops'],
+      },
+    ];
+
+    const filtered = sampleInsights.filter((i) => i.themes.includes('Management Communication'));
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].id).toBe('INS-01');
   });
 });

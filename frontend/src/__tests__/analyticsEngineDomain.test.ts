@@ -61,6 +61,38 @@ describe('FEAT-007 Analytics Engine Domain Integration', () => {
     expect(suppressedGroup?.colorIntensity).toBe('GREY');
   });
 
+  it('getDashboardMetrics passes demographic filter query parameters to endpoint', async () => {
+    const mockResponse = {
+      campaignId: 'CMP-1001',
+      nodeId: 'N-201',
+      totalResponses: 150,
+      participationRate: 75.0,
+      eNPS: 35.0,
+      engagementIndex: 80.0,
+      groupScores: [
+        { groupId: 'QG-01', groupName: 'Leadership', sampleSize: 150, score: 80.0, colorIntensity: 'GREEN' as const },
+      ],
+    };
+
+    const spy = vi.spyOn(apiClient, 'get').mockResolvedValue({
+      success: true,
+      data: mockResponse,
+    });
+
+    const filters = { Tenure: '1-3 Years', Gender: 'Female' };
+    const result = await analyticsApi.getDashboardMetrics('CMP-1001', 'N-201', filters);
+
+    expect(spy).toHaveBeenCalledWith('/analytics/dashboard', {
+      params: {
+        campaignId: 'CMP-1001',
+        nodeId: 'N-201',
+        Tenure: '1-3 Years',
+        Gender: 'Female',
+      },
+    });
+    expect(result.eNPS).toBe(35.0);
+  });
+
   it('getHeatmapMatrix calls GET /analytics/heatmap via gateway client', async () => {
     const mockResponse = {
       campaignId: 'CMP-101',

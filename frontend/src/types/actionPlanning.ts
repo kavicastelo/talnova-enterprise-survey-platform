@@ -8,6 +8,19 @@ export type ActionStatus =
   | 'VERIFIED'
   | 'CANCELLED';
 
+export interface ActionMilestone {
+  milestoneId: string;
+  title: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  dueDate: string;
+}
+
+export interface ActionExternalSync {
+  system: 'NONE' | 'JIRA' | 'MS_PLANNER';
+  externalKey?: string;
+  lastSyncedAt?: string;
+}
+
 export interface ActionPlanResponse {
   actionPlanId: string;
   projectId: string;
@@ -21,9 +34,12 @@ export interface ActionPlanResponse {
   postActionScore?: number;
   status: ActionStatus;
   assigneeId?: string;
+  approverId?: string;
   targetCompletionDate?: string;
   milestoneCount?: number;
+  milestones?: ActionMilestone[];
   externalSyncSystem?: string;
+  externalSync?: ActionExternalSync;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -40,7 +56,15 @@ export interface ActionPlanCreateRequest {
   targetScore?: number;
   assigneeId?: string;
   targetCompletionDate?: string;
+  milestones?: ActionMilestone[];
   status?: ActionStatus;
+}
+
+export interface StateTransitionRequest {
+  targetStatus: ActionStatus;
+  actorId?: string;
+  userRole?: string;
+  comments?: string;
 }
 
 export interface ApprovalRequest {
@@ -51,7 +75,8 @@ export interface ApprovalRequest {
 
 export interface ExternalSyncInfo {
   system: string;
-  externalId: string;
+  externalId?: string;
+  externalKey?: string;
   externalUrl?: string;
   syncedAt?: string;
 }
@@ -62,4 +87,6 @@ export interface ActionTemplate {
   title: string;
   description: string;
   recommendedDurationDays: number;
+  milestones?: ActionMilestone[];
 }
+

@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-
-export type ReportType =
-  | 'EXEC_SUMMARY_PDF'
-  | 'DEPT_BREAKDOWN_PDF'
-  | 'RAW_RESPONSES_XLSX'
-  | 'AGGREGATED_SCORES_XLSX';
+import { useGenerateReportMutation } from '../../features/reporting/api/useReportingQueries';
+import { ReportType } from '../../types/reporting';
 
 interface ReportExportModalProps {
   isOpen: boolean;
@@ -27,50 +23,40 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const [enablePassword, setEnablePassword] = useState<boolean>(false);
   const [includeHeatmaps, setIncludeHeatmaps] = useState<boolean>(true);
   const [includeAiSummary, setIncludeAiSummary] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const generateReportMutation = useGenerateReportMutation();
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage(null);
 
     if (enablePassword && (passwordProtection.length < 6 || passwordProtection.length > 30)) {
       setErrorMessage('Password protection must be between 6 and 30 characters (VR-RPT-004)');
-      setIsSubmitting(false);
       return;
     }
 
-    try {
-      const payload = {
+    generateReportMutation.mutate(
+      {
         projectId,
         campaignId,
         reportType,
         nodeId,
         requestedBy: 'USR-HR-DIRECTOR',
         passwordProtection: enablePassword ? passwordProtection : undefined,
-      };
-
-      const response = await fetch('/api/v1/reports/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok && response.status !== 202) {
-        throw new Error(`Failed to submit report request (${response.status})`);
+      },
+      {
+        onSuccess: (data) => {
+          onJobSubmitted(data.jobId);
+          onClose();
+        },
+        onError: (err: any) => {
+          setErrorMessage(err?.message || 'Failed to trigger report export job');
+        },
       }
-
-      const data = await response.json();
-      onJobSubmitted(data.jobId);
-      onClose();
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to trigger report export job');
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   return (
@@ -183,10 +169,10 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={generateReportMutation.isPending}
               className="rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSubmitting ? 'Queueing Export Job...' : 'Submit Export Job (202 Accepted)'}
+              {generateReportMutation.isPending ? 'Queueing Export Job...' : 'Submit Export Job (202 Accepted)'}
             </button>
           </div>
         </form>
