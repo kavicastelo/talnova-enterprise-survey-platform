@@ -7,6 +7,7 @@ export interface BadgeProps {
   dot?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  onClick?: () => void;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -16,6 +17,7 @@ export const Badge: React.FC<BadgeProps> = ({
   dot = false,
   style,
   className = '',
+  onClick,
 }) => {
   const variantStyles = {
     success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -42,6 +44,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
+      onClick={onClick}
       style={style}
       className={`inline-flex items-center border rounded-full font-mono tracking-wide ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
     >
